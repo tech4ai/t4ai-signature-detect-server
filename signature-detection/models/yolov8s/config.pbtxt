@@ -1,0 +1,34 @@
+name: "yolov8s"
+backend: "onnxruntime"
+default_model_filename: "model.onnx"
+
+max_batch_size: 16
+
+input {
+  name: "images"
+  data_type: TYPE_FP32
+  dims: [3, -1, -1]
+}
+
+output {
+  name: "output0"
+  data_type: TYPE_FP32
+  dims: [5, -1]
+}
+
+instance_group {
+  count: 1
+  kind: KIND_CPU
+}
+
+dynamic_batching {
+  max_queue_delay_microseconds: 0
+}
+
+optimization { execution_accelerators {
+  cpu_execution_accelerator : [ {
+    name : "openvino"
+  } ]
+}}
+
+parameters { key: "execution_mode" value: { string_value: "1" } }
