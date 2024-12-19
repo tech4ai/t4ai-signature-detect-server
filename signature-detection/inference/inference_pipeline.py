@@ -3,12 +3,9 @@ import time
 from typing import Optional
 import subprocess
 
-import gradio as gr
 import requests
 import numpy as np
-import cv2
-import matplotlib.pyplot as plt
-import base64
+from pprint import pprint
 
 def encode_image(image_path):
     image_data = np.fromfile(image_path, dtype="uint8")
@@ -83,9 +80,7 @@ class InferencePipeline:
         response, mean_time = self.predictor.predict(payload)
         
         result = self._process_response(response)
-        print(result)
         
-        print(f"Inference time: {mean_time}")
         return {'result' : result, 'inference_time': mean_time}
 
     def _create_payload(self, image):
@@ -138,6 +133,7 @@ def main():
     for image_path in image_paths:
         r = pipeline.run(image_path)
         i_times.append(r['inference_time'])
+        pprint(r)
     
     print(f"Average inference time: {np.mean(i_times)}")
     
