@@ -4,11 +4,11 @@ import time
 
 from tritonclient.http import InferenceServerClient
 
-model_name = "yolov8s"
-triton_repo_path = "gs://iag-training/triton-server/image/signature-detection/models"
+model_name = "yolov8_ensemble"
+triton_repo_path = "/home/samuel/codes/tech4/projects/t4ai-triton-server/signature-detection/models" #"gs://iag-training/triton-server/image/signature-detection/models"
 
 # Define image https://catalog.ngc.nvidia.com/orgs/nvidia/containers/tritonserver
-tag = "avante" 
+tag = "triton-signature-server:latest" 
 
 # Pull the image
 #subprocess.call(f"docker pull {tag}", shell=True)
@@ -18,17 +18,11 @@ container_id = (
     subprocess.check_output(
         f'''
         docker run \
-            -t -d \
-            -p 8000:8000 -p 8001:8001 -p 8002:8002 \
+            -p 8000:8000 \
+            -d  \
             --name=local_object_detector \
-            -e AIP_MODE=True \
-            -v /home/samuel/.config/gcloud/application_default_credentials.json:/gcloud-creds.json \
-            -e GOOGLE_APPLICATION_CREDENTIALS=/gcloud-creds.json \
-            {tag} \
-            --model-repository {triton_repo_path} \
-            --model-control-mode=explicit \
-            --load-model=* \
-            --log-verbose=1
+            -v {triton_repo_path}:/models \
+            {tag}
         ''',
         shell=True,
     )
