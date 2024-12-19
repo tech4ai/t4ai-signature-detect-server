@@ -8,9 +8,12 @@ import requests
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
+import base64
 
-from utils.postprocessing import postprocess
-from utils.preprocessing import preprocess
+def encode_image(image_path):
+    image_data = np.fromfile(image_path, dtype="uint8")
+    image_data = np.expand_dims(image_data, axis=0)
+    return image_data
 
 ## Strategy Pattern for Inference
 class BasePredictor:
@@ -73,23 +76,17 @@ class InferencePipeline:
 
     def run(self, image_path):
         """Run the inference pipeline."""
-        orig_image = cv2.imread(image_path)
+        image_data = encode_image(image_path)
         
-        preprocessed_image = preprocess(image_path)
-        
-        payload = self._create_payload(preprocessed_image)
+        payload = self._create_payload(image_data)
 
         response, mean_time = self.predictor.predict(payload)
-
-        tic = time.time()
-        preds = self._process_response(response)
-        result = postprocess(preds[0], preprocessed_image, [orig_image], [image_path])[0]
-        post_mean_time = time.time() - tic
         
-        # self._visualize_results(results)
-            
+        result = self._process_response(response)
+        print(result)
+        
         print(f"Inference time: {mean_time}")
-        return {'result' : result, 'inference_time': mean_time, 'post_process_time': post_mean_time}
+        return {'result' : result, 'inference_time': mean_time}
 
     def _create_payload(self, image):
         """Create the payload for the model."""
@@ -97,10 +94,9 @@ class InferencePipeline:
             "id": "0",
             "inputs": [
                 {
-                    "name": "images",
-                    "shape": list(image.shape),
-                    "datatype": "FP32",
-                    "parameters": {},
+                    "name": "raw_image",
+                    "shape": image.shape,
+                    "datatype": "UINT8",
                     "data": image.tolist()
                 }
             ]
@@ -108,15 +104,16 @@ class InferencePipeline:
 
     def _process_response(self, response):
         """Extract predictions from response."""
-        return [np.array(response['outputs'][0]['data']).astype(np.float32).reshape([1, 5, 8400])]
-
-    def _visualize_results(self, results):
-        """Visualize bounding boxes."""
-        for result in results:
-            im = result.plot()
-            plt.imshow(im)
-            plt.axis('off')
-            plt.show()
+        data = np.array(response['outputs'][0]['data']).astype(np.float32)
+        # Número de detecções
+        num_detections = data.shape[0] // 5
+        # Reorganize o array em uma matriz de N x 5
+        data = data.reshape((num_detections, 5))
+        # Separar bounding boxes e scores
+        return {
+            "detection_boxes": data[:, :4],
+            "detection_scores" : data[:, 4],
+        }
             
 
 ## Main Execution
@@ -133,20 +130,18 @@ REDACTED_PATH
             url="REDACTED_VERTEX_ENDPOINT",
         )
     else:
-        predictor = LocalPredictor(url="http://localhost:8000/v2/models/yolov8s/infer")
+        predictor = LocalPredictor(url="http://localhost:8000/v2/models/yolov8_ensemble/infer")
 
     # Run Pipeline
     pipeline = InferencePipeline(predictor)
     i_times = []
-    p_times = []
     for image_path in image_paths:
-        r= pipeline.run(image_path)
+        r = pipeline.run(image_path)
         i_times.append(r['inference_time'])
-        p_times.append(r['post_process_time'])
     
     print(f"Average inference time: {np.mean(i_times)}")
-    print(f"Average post-process time: {np.mean(p_times)}")
     
 if __name__ == "__main__":
     main()
     
+# 0.45890190170079775
