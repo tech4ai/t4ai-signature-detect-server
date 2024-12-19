@@ -1,0 +1,59 @@
+name: "yolov8_ensemble"
+platform: "ensemble"
+
+max_batch_size: 16
+input [
+  {
+    name: "raw_image"
+    data_type: TYPE_UINT8
+    dims: [-1] 
+  }
+]
+output [
+    {
+      name: "detection_result"
+      data_type: TYPE_FP32
+      dims: [-1, 5]
+    }
+]
+
+ensemble_scheduling {
+  step [
+    {
+      model_name: "preprocess"
+      model_version: -1
+      input_map {
+        key: "raw_image"
+        value: "raw_image"
+      }
+      output_map {
+        key: "preprocessed_image"
+        value: "input_images"
+      }
+    },
+    {
+      model_name: "yolov8s"
+      model_version: -1
+      input_map {
+        key: "images"
+        value: "input_images"
+      }
+      output_map {
+        key: "output0"
+        value: "output0"
+      }
+    },
+    {
+      model_name: "postprocess"
+      model_version: -1
+      input_map {
+        key: "postprocess_input"
+        value: "output0"
+      }
+      output_map {
+        key: "detection_result"
+        value: "detection_result"
+      }
+    }
+  ]
+}

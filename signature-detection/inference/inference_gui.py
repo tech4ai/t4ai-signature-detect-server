@@ -1,9 +1,50 @@
 import os
 import gradio as gr
-from PIL import Image
+from PIL import Image, ImageDraw
 import requests
 from inference_pipeline import InferencePipeline, LocalPredictor, VertexAIPredictor
 import numpy as np
+
+def draw_result(image_path, result):
+    """
+    Desenha as bounding boxes na imagem.
+    
+    Args:
+        image_path (str): Caminho da imagem original.
+        result (dict): Dicionário contendo `detection_boxes` e `detection_scores`.
+    
+    Returns:
+        PIL.Image: Imagem com as bounding boxes desenhadas.
+    """
+    # Carregar a imagem
+    image = Image.open(image_path)
+    draw = ImageDraw.Draw(image)
+
+    # Obter dimensões originais
+    img_width, img_height = image.size
+
+    # Desenhar as bounding boxes
+    boxes = result["detection_boxes"]
+    scores = result["detection_scores"]
+
+    for box, score in zip(boxes, scores):
+        if score >= 0.5:  # Filtrar por confiança mínima
+            x1, y1, w, h = box
+            x2 = x1 + w
+            y2 = y1 + h
+
+            # Rescale se necessário
+            x1, y1 = int(x1), int(y1)
+            x2, y2 = int(x2), int(y2)
+
+            # Desenhar bounding box
+            draw.rectangle([x1, y1, x2, y2], outline="red", width=3)
+
+            # Adicionar label com score
+            label = f"{score:.2f}"
+            draw.text((x1, y1 - 10), label, fill="red")
+
+    return image
 
 # Gradio Interface
 def inference(image, url, use_vertex):
@@ -11,14 +52,14 @@ def inference(image, url, use_vertex):
         return "Please upload an image or provide a URL."
 
     # Handle file input or URL
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    root_path = os.path.join(current_dir, 'tmp')
+    if not os.path.exists(root_path):
+        os.makedirs(root_path, exist_ok=True)
+    image_path = os.path.join(root_path, "temp_image.jpg")
+        
     if image is not None and isinstance(image, np.ndarray):
         print("Image received:", type(image), image.shape)
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        root_path = os.path.join(current_dir, 'tmp')
-        if not os.path.exists(root_path):
-            os.makedirs(root_path, exist_ok=True)
-            
-        image_path = os.path.join(root_path, "temp_image.jpg")
         try:
             pil_image = Image.fromarray(image.astype(np.uint8), 'RGB')
             pil_image.save(image_path, format="JPEG")
@@ -30,7 +71,6 @@ def inference(image, url, use_vertex):
         try:
             response = requests.get(url, stream=True)
             if response.status_code == 200:
-                image_path = "temp_image.jpg"
                 with open(image_path, "wb") as f:
                     f.write(response.content)
                 print("Image downloaded successfully.")
@@ -50,12 +90,12 @@ def inference(image, url, use_vertex):
         return "Failed to process image."
 
     # Remove temporary file if created
-    os.remove(image_path)
+    # os.remove(image_path)
 
-    return resp['result'].plot()
+    return draw_result(image_path, resp['result'])
 
 predictors = {
-    "local":  LocalPredictor(url="http://localhost:8000/v2/models/yolov8s/infer"),
+    "local":  LocalPredictor(url="http://localhost:8000/v2/models/yolov8_ensemble/infer"),
     "vertex": VertexAIPredictor(url="https://8605861017928335360.us-central1-100881400340.prediction.vertexai.goog/v1/projects/100881400340/locations/us-central1/endpoints/8605861017928335360:rawPredict")
 }
 

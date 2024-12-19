@@ -1,0 +1,19 @@
+name: "postprocess"
+backend: "python"
+
+max_batch_size: 16
+input {
+  name: "postprocess_input"
+  data_type: TYPE_FP32
+  dims: [5, -1]
+}
+
+output [
+    {
+      name: "detection_result"
+      data_type: TYPE_FP32 
+      dims: [-1, 5]
+    }
+]
+
+instance_group { kind: KIND_CPU }
