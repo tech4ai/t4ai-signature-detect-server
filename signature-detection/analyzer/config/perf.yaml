@@ -1,4 +1,4 @@
-model_repository: /home/samuel/codes/tech4/tests/triton-server/signature-detection/models
+model_repository: /signature-detection/models
 
 run_config_search_mode: optuna
 run_config_search_max_instance_count: 2
