@@ -1,0 +1,4 @@
+ultralytics==8.3.55
+gradio==5.9.1
+tritonclient[all]==2.53.0
+google-cloud-storage==2.19.0
