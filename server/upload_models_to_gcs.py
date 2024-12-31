@@ -28,17 +28,18 @@ def upload_files_to_gcs(local_folder, bucket_name, remote_folder):
 
             print(f"Arquivo {file} carregado para {remote_file_path}.")
 
-# Definir os parâmetros
-base_dir = os.path.dirname(os.path.abspath(__file__))  # Obtém o diretório onde o script está
-local_folder = os.path.join(base_dir, '..', 'signature-detection', 'models')  # Caminho correto para a pasta 'models'
+if __name__ == '__main__':
+    # Definir os parâmetros
+    base_dir = os.path.dirname(os.path.abspath(__file__))  # Obtém o diretório onde o script está
+    local_folder = os.path.join(base_dir, '..', 'signature-detection', 'models')  # Caminho correto para a pasta 'models'
 
-# Check if the folder exists
-if not os.path.exists(local_folder):
-    print(f"A pasta {local_folder} não existe.")
-    exit()
+    # Check if the folder exists
+    if not os.path.exists(local_folder):
+        print(f"A pasta {local_folder} não existe.")
+        exit()
 
-bucket_name = 'iag-training'  # Nome do bucket
-remote_folder = 'triton-server/image/signature-detection/models'  # Caminho remoto no bucket
+    bucket_name = 'iag-training'  # Nome do bucket
+    remote_folder = 'triton-server/image/signature-detection/models'  # Caminho remoto no bucket
 
-# Chamar a função para fazer o upload dos arquivos
-upload_files_to_gcs(local_folder, bucket_name, remote_folder)
+    # Chamar a função para fazer o upload dos arquivos
+    upload_files_to_gcs(local_folder, bucket_name, remote_folder)
