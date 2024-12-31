@@ -1,28 +1,44 @@
 import contextlib
 import subprocess
 import time
+import os
 
 from tritonclient.http import InferenceServerClient
 
 model_name = "yolov8_ensemble"
-REDACTED_PATH
-
-# Define image https://catalog.ngc.nvidia.com/orgs/nvidia/containers/tritonserver
+triton_repo_path = "REDACTED_BUCKET_PATH"
 tag = "triton-signature-server:latest" 
 
-# Pull the image
-#subprocess.call(f"docker pull {tag}", shell=True)
+# Obtém o diretório onde o script está
+base_dir = os.path.dirname(os.path.abspath(__file__))
+
+dockerfile_path = os.path.abspath(os.path.join(base_dir, '..', '..', 'Dockerfile'))
+
+# Verifica se a variável de ambiente GOOGLE_APPLICATION_CREDENTIALS está configurada
+if "GOOGLE_APPLICATION_CREDENTIALS" not in os.environ:
+    raise EnvironmentError(
+        "A variável de ambiente 'GOOGLE_APPLICATION_CREDENTIALS' não está configurada. "
+        "Configure-a apontando para o caminho do arquivo JSON de credenciais do Google Cloud."
+    )
+
+# Caminho para o arquivo de credenciais
+google_creds_path = os.environ["GOOGLE_APPLICATION_CREDENTIALS"]
+
+# Build the Triton server image
+# subprocess.call(f"docker build -t {tag} -f {dockerfile_path} {base_dir}", shell=True)
+
 
 # Run the Triton server and capture the container ID
 container_id = (
     subprocess.check_output(
         f'''
-        docker run \
-            -p 8000:8000 \
+            docker run \
+            -p 8000:8000 -p 8001:8001 -p 8002:8002 \
             -d  \
             --name=local_object_detector \
-            -v {triton_repo_path}:/models \
-            {tag}
+            -v {google_creds_path}:/gcloud-creds.json \
+            -e GOOGLE_APPLICATION_CREDENTIALS=/gcloud-creds.json \
+            {tag}  
         ''',
         shell=True,
     )
@@ -36,31 +52,9 @@ triton_client = InferenceServerClient(url="localhost:8000", verbose=True, ssl=Fa
 # Wait until model is ready
 for _ in range(100):
     with contextlib.suppress(Exception):
-        assert triton_client.is_model_ready(model_name)
-        break
+        if triton_client.is_model_ready(model_name):
+            print(f"Modelo {model_name} está pronto.")
+            break
     time.sleep(1)
-    
-
-'''
-docker run -t -d -p 8000:8000 --rm \
-    -v REDACTED_CREDENTIALS_PATH:/gcloud-creds.json \
-    -e GOOGLE_APPLICATION_CREDENTIALS=/gcloud-creds.json -e AIP_MODE=True \
-    REDACTED_CONTAINER_URL \
-    --model-repository REDACTED_BUCKET_PATH \
-    --strict-model-config=false
-'''  
-
-# Model Analyzer
-'''
-docker run -it  \
-      -v /var/run/docker.sock:/var/run/docker.sock \
-      -v $(pwd)/signature-detection/models:$(pwd)/signature-detection/models \
-      --net=host nvcr.io/nvidia/tritonserver:24.11-py3-sdk 
-'''
-
-'''
-REDACTED_PATH
-
-model-analyzer report --report-model-configs yolov8s_config_0,yolov8s_config_12,yolov8s_config_4,yolov8s_config_8,yolov8s_config_1,yolov8s_config_13,yolov8s_config_5,yolov8s_config_default,yolov8s_config_10,yolov8s_config_2,yolov8s_config_6,yolov8s_config_11,yolov8s_config_3,yolov8s_config_7 --export-path /workspace --config-file perf.yaml 
-
-'''
+else:
+    raise RuntimeError(f"O modelo {model_name} não ficou pronto a tempo.")
