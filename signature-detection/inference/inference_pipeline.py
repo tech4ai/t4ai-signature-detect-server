@@ -68,6 +68,7 @@ def main():
         r = pipeline.run(image_path)
         pprint(r)
         i_times.append(r['inference_time'])
+        pprint(r)
     
     print(f"Average inference time: {np.mean(i_times)}")
     
