@@ -3,8 +3,7 @@
 <table>
   <tr>
     <td>
-      <a href="#"><img src="https://img.shields.io/badge/Triton-Inference%20Server-76B900?style=for-the-badge&
-      labelColor=black&logo=nvidia" alt="Triton Badge" /></a>
+      <a href="#"><img src="https://img.shields.io/badge/Triton-Inference%20Server-76B900?style=for-the-badge&labelColor=black&logo=nvidia" alt="Triton Badge" /></a>
     </td>
     <td>
       <a href="#"><img src="https://img.shields.io/badge/-Docker-2496ED?style=for-the-badge&labelColor=black&logo=docker&logoColor=2496ED" alt="Docker Badge" /></a>
@@ -13,7 +12,7 @@
       <a href="#"><img src="https://img.shields.io/badge/-Python-3776AB?style=for-the-badge&labelColor=black&logo=python&logoColor=3776AB" alt="Python Badge" /></a>
     </td>
     <td>
-      <a href="#"><img src="https://img.shields.io/badge/Apache-2.0-D22128?style=for-the-badge&logo=apache" alt="Apache Badge" /></a>
+      <a href="#"><img src="https://img.shields.io/badge/Apache-2.0-D22128?style=for-the-badge&labelColor=black&logo=apache" alt="Apache Badge" /></a>
     </td>
     <td>
       <a href="#"><img src="https://img.shields.io/badge/-Opencv-5C3EE8?style=for-the-badge&labelColor=black&logo=opencv&logoColor=5C3EE8" alt="Opencv Badge" /></a>
