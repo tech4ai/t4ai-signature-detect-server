@@ -13,7 +13,7 @@
       <a href="#"><img src="https://img.shields.io/badge/-Python-3776AB?style=for-the-badge&labelColor=black&logo=python&logoColor=3776AB" alt="Python Badge" /></a>
     </td>
     <td>
-      <a href="#"><img src="https://img.shields.io/badge/Apache-2.0-000000?style=for-the-badge&logo=apache" alt="Apache Badge" /></a>
+      <a href="#"><img src="https://img.shields.io/badge/Apache-2.0-D22128?style=for-the-badge&logo=apache" alt="Apache Badge" /></a>
     </td>
     <td>
       <a href="#"><img src="https://img.shields.io/badge/-Opencv-5C3EE8?style=for-the-badge&labelColor=black&logo=opencv&logoColor=5C3EE8" alt="Opencv Badge" /></a>
@@ -29,6 +29,8 @@ This project provides a  pipeline for deploying and performing inference with a 
 - [Features](#%EF%B8%8F-features)
 - [Dependencies](#-dependencies)
 - [Installation](#installation)
+- [Inference](#inference)
+- [Ensemble Model](#ensemble-model)
 - [Notes](#-notes)
 - [License](#-license)
 
@@ -88,6 +90,121 @@ To get started, ensure you have the following installed:
 5. **Run inference**: The scripts in signature-detection/inference can be used to perform inference on images using differents methods (requests, triton client, vertex ai).
    - **GUI:** Use the [`inference_gui.py`](signature-detection/inference/inference_gui.py) to test the deployed model and visualize the results.
    - **CLI:** Use the [`inference_pipeline.py`](signature-detection/inference/inference_pipeline.py) script to perform inference on images.
+
+## Inference 
+
+The [`inference_pipeline.py`](signature-detection/inference/inference_pipeline.py) script can be used to perform inference on images using different methods. The script supports the following methods:
+
+- **Triton Client**: Inference using the Triton Inference Server SDK.
+- **Vertex AI**: Inference using Google Cloud's Vertex AI Enpoint.
+- **Http**: Inference using HTTP requests to the Triton Inference Server.
+
+```mermaid
+classDiagram
+    class ABC {
+    }
+    class BasePredictor {
+        +__init__()
+        +request(input)
+        +format_response(response)
+        +predict(input)
+    }
+    class HttpPredictor {
+        +__init__(url)
+        ~_create_payload(image)
+        +request(input)
+        +format_response(response)
+    }
+    class VertexAIPredictor {
+        +__init__(url, access_token)
+        ~_get_google_access_token()
+    }
+    class TritonClientPredictor {
+        +__init__(url, endpoint, scheme)
+        +request()
+        +format_response(response)
+    }
+    class InferencePipeline {
+        +__init__(predictor)
+        +run(image_path)
+        ~_process_response(response)
+    }
+  
+    ABC <|-- BasePredictor
+    BasePredictor <|-- HttpPredictor
+    HttpPredictor <|-- VertexAIPredictor
+    BasePredictor <|-- TritonClientPredictor
+    InferencePipeline --> BasePredictor : uses
+```
+
+## Ensemble Model
+
+The repository includes an [Ensemble Model](https://docs.nvidia.com/deeplearning/triton-inference-server/user-guide/docs/user_guide/architecture.html#ensemble-models) for the YOLOv8 object detection model. The Ensemble Model combines the YOLOv8 model with pre and post-processing scripts to perform inference on images. The model repository is located in the [`models/`](signature-detection/models) directory.
+
+```mermaid
+flowchart TB
+
+    subgraph "Triton Inference Server"
+        direction TB
+        subgraph "Ensemble Model Pipeline"
+            direction TB
+            subgraph Input
+                raw["raw_image 
+                (UINT8, [-1])"]
+            end
+
+            subgraph "Preprocess Py-Backend"
+                direction TB
+                pre1["Decode Image
+                    BGR to RGB"]
+                pre2["Resize (640x640)"]
+                pre3["Normalize (/255.0)"]
+                pre4["Transpose
+                [H,W,C]->[C,H,W]"]
+                pre1 --> pre2 --> pre3 --> pre4
+            end
+
+            subgraph "YOLOv8 Model ONNX Backend"
+                yolo["Inference YOLOv8s"]
+            end
+
+            subgraph "Postproces Python Backend"
+                direction TB
+                post1["Transpose 
+                  Outputs"]
+                post2["Filter Boxes (score > 0.1)"]
+                post3["NMS (threshold=0.45)"]
+                post4["Format Results [x,y,w,h,score]"]
+                post1 --> post2 --> post3 --> post4
+            end
+
+            subgraph Output
+                result["detection_result
+                    (FP32, [-1,5])"]
+            end
+
+            raw --> pre1
+            pre4 --> |"preprocessed_image (FP32, [3,-1,-1])"| yolo
+            yolo --> |"output0"| post1
+            post4 --> result
+        end
+    end
+
+    subgraph Client
+        direction TB
+        client_start["Client Application"]
+        response["Detections Result
+                [x,y,w,h,score]"]
+    end
+    
+    client_start -->|"HTTP/gRPC Request
+          with raw image"| raw
+    result -->|"HTTP/gRPC Response with detections"| response
+
+    style Client fill:#e6f3ff,stroke:#333
+    style Input fill:#f9f,stroke:#333
+    style Output fill:#9ff,stroke:#333
+```
 
 ## 📊 Model Analyzer
 
