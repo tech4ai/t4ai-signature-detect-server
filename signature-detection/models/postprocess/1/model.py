@@ -38,7 +38,7 @@ class TritonPythonModel:
         self.detection_result_dtype = pb_utils.triton_string_to_numpy(
             detection_result_config['data_type'])
 
-        self.score_threshold = 0.6
+        self.score_threshold = 0.1
         self.nms_threshold = 0.45
 
     def execute(self, requests):
