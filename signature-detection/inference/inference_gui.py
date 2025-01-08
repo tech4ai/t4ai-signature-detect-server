@@ -1,10 +1,13 @@
 import os
-import gradio as gr
-from PIL import Image, ImageDraw
-import requests
 from pprint import pprint
-from inference_pipeline import InferencePipeline, HttpPredictor, TritonClientPredictor, VertexAIPredictor
+
+import gradio as gr
 import numpy as np
+import requests
+from PIL import Image, ImageDraw
+
+from inference_pipeline import (HttpPredictor, InferencePipeline,
+                                TritonClientPredictor, VertexAIPredictor)
 
 # Variável global para armazenar o preditor atual e sua escolha
 current_predictor = None
