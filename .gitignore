@@ -162,3 +162,5 @@ cython_debug/
 #.idea/
 
 server/vertexai/test
+signature-detection/inference/tmp
+signature-detection/data/datasets
