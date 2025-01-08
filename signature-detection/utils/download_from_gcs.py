@@ -1,5 +1,7 @@
-from google.cloud import storage
 import os
+
+from google.cloud import storage
+
 
 # Inicialize o cliente do Google Cloud Storage
 def download_files_from_gcs(bucket_name, remote_folder, local_folder):
