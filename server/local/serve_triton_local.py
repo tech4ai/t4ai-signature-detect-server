@@ -1,50 +1,26 @@
 import contextlib
+import os
 import subprocess
 import time
-import os
 
 from tritonclient.http import InferenceServerClient
 
+BUILD = True
+
 model_name = "yolov8_ensemble"
-triton_repo_path = "REDACTED_BUCKET_PATH"
 tag = "triton-signature-server:latest" 
 
 # Obtém o diretório onde o script está
 base_dir = os.path.dirname(os.path.abspath(__file__))
 
-dockerfile_path = os.path.abspath(os.path.join(base_dir, '..', '..', 'Dockerfile'))
+compose_file = os.path.abspath(os.path.join(base_dir, "..", "..", 'docker-compose.yml'))
 
-# Verifica se a variável de ambiente GOOGLE_APPLICATION_CREDENTIALS está configurada
-if "GOOGLE_APPLICATION_CREDENTIALS" not in os.environ:
-    raise EnvironmentError(
-        "A variável de ambiente 'GOOGLE_APPLICATION_CREDENTIALS' não está configurada. "
-        "Configure-a apontando para o caminho do arquivo JSON de credenciais do Google Cloud."
-    )
-
-# Caminho para o arquivo de credenciais
-google_creds_path = os.environ["GOOGLE_APPLICATION_CREDENTIALS"]
-
-# Build the Triton server image
-# subprocess.call(f"docker build -t {tag} -f {dockerfile_path} {base_dir}", shell=True)
-
-
-# Run the Triton server and capture the container ID
-container_id = (
-    subprocess.check_output(
-        f'''
-            docker run \
-            -p 8000:8000 -p 8001:8001 -p 8002:8002 \
-            -d  \
-            --name=local_object_detector \
-            -v {google_creds_path}:/gcloud-creds.json \
-            -e GOOGLE_APPLICATION_CREDENTIALS=/gcloud-creds.json \
-            {tag}  
-        ''',
-        shell=True,
-    )
-    .decode("utf-8")
-    .strip()
-)
+# Inicia o serviço com Docker Compose
+compose_cmd = f"docker compose -f {compose_file} up -d"
+if BUILD:
+    compose_cmd += " --build"
+    
+subprocess.call(compose_cmd, shell=True)
 
 # Wait for the Triton server to start
 triton_client = InferenceServerClient(url="localhost:8000", verbose=True, ssl=False)

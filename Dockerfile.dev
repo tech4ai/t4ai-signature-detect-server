@@ -120,6 +120,12 @@ RUN chown triton-server:triton-server /opt/tritonserver/backends
 
 COPY --chown=1000:1000 --from=full /usr/bin/serve /usr/bin/.
 
+# -- Dev only
+COPY .env .env
+# Copy model repository
+COPY /signature-detection/models  /models
+# -- Dev only
+
 EXPOSE 8000 
 
 # Server initialization script
