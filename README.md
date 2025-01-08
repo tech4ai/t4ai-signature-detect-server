@@ -85,15 +85,15 @@ To get started, ensure you have the following installed:
    ```bash
    pip install -r requirements.txt
    ```
-3. **Configure your environment**: Set up Google Cloud credentials and project ID.
+3. **Configure your environment**: Set up Google Cloud credentials and env file (See [.env.example](.env.example)).
 4. **Build and deploy**: 
    - **Vertex AI:** Follow the instructions in [`deploy_vertex_ai.sh`](server/vertexai/deploy_vertex_ai.sh) to deploy the model to Vertex AI Endpoint. Or programmatically using [`nvidia_triton_custom_container_prediction.ipynb`](server/vertexai/nvidia_triton_custom_container_prediction.ipynb).
-   - **Local:** Run the Triton Inference Server locally using the provided Dockerfile. The [`serve_triton_local_.py`](server/local/serve_triton_local.py) script can be used to start the server.
-   - **Docker:** Build the Docker image using the provided Dockerfile and run the container in your preferred environment.
-    - **docker compose:** You can use the provided `docker-compose.yml` file to run the Triton Inference Server locally using Docker Compose.
+   - **Docker:** Run the Triton Inference Server using the provided [Dockerfile](Dockerfile.dev) The [`serve_triton_local_.py`](server/local/serve_triton_local.py) script can be used to start the server locally.
+    - **docker compose:** You can use the provided [`docker-compose.yml`](docker-compose.yml).
 5. **Run inference**: The scripts in signature-detection/inference can be used to perform inference on images using differents methods (requests, triton client, vertex ai).
    - **GUI:** Use the [`inference_gui.py`](signature-detection/inference/inference_gui.py) to test the deployed model and visualize the results.
-   - **CLI:** Use the [`inference_pipeline.py`](signature-detection/inference/inference_pipeline.py) script to perform inference on images.
+   - **CLI:** Use the [`inference_pipeline.py`](signature-detection/inference/inference_pipeline.py) script to select predictor and perform inference on test dataset images.
+   - **ONNX:** Use the [`inference_onnx.py`](signature-detection/inference/inference_onnx.py) script to perform inference with the ONNX runtime locally.
 
 ## Inference 
 
@@ -209,6 +209,25 @@ flowchart TB
     style Input fill:#f9f,stroke:#333
     style Output fill:#9ff,stroke:#333
 ```
+
+## Limit Endpoint Access
+
+To limit access to some protocols of the server, you can use the `--http-restricted-api` or `--grpc-restricted-protocol` flags. This will restrict the determined protocol to only allow acces by a <restricted-key>=<restricted-value> pair in the request headers. 
+
+In this project the [`entrypoint.sh`](entrypoint.sh) script is configured to use the `--http-restricted-api` flag with the `admin-key` as the restricted key and the value defined in the `.env` file. The GRPC protocol is disabled with the `--allow-grpc=false` flag.
+
+```bash
+tritonserver \
+  --model-repository=${TRITON_MODEL_REPOSITORY} \
+  --model-control-mode=explicit \
+  --load-model=* \
+  --log-verbose=1 \
+  --allow-metrics=false \
+  --allow-grpc=false \
+  --http-restricted-api=model-repository,model-config,shared-memory,statistics,trace:admin-key=${TRITON_ADMIN_KEY}
+```
+
+This allow the server to accept inference by any user, but only allow access to the model repository, model config, shared memory, statistics and trace endpoints if the request contains the `admin-key` header with the value defined in the `.env` file.
 
 ## 📊 Model Analyzer
 
