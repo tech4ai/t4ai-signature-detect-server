@@ -178,7 +178,7 @@ class TritonClientPredictor(BasePredictor):
         # Sort output names alphabetically, i.e. 'output0', 'output1', etc.
         config["output"] = sorted(config["output"], key=lambda x: x.get("name"))
 
-        pprint(self.triton_client.get_inference_statistics(model_name=self.endpoint, headers=self.headers))
+        # pprint(self.triton_client.get_inference_statistics(model_name=self.endpoint, headers=self.headers))
         # pprint(self.triton_client.get_model_repository_index())
         
         # Define model attributes
@@ -214,7 +214,7 @@ class TritonClientPredictor(BasePredictor):
         infer_outputs = [self.InferRequestedOutput(output_name) for output_name in self.output_names]
         
         tic = time.time()
-        outputs = self.triton_client.infer(model_name=self.endpoint, inputs=infer_inputs, outputs=infer_outputs, response_compression_algorithm='deflate', headers=self.headers)
+        outputs = self.triton_client.infer(model_name=self.endpoint, inputs=infer_inputs, outputs=infer_outputs, request_compression_algorithm=None, response_compression_algorithm='gzip', headers=self.headers)
         latency = time.time() - tic
 
         return outputs.as_numpy(self.output_names[0]).astype(self.np_output_formats[0]), latency
