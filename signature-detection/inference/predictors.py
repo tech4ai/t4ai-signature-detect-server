@@ -1,14 +1,27 @@
-from abc import ABC, abstractmethod
-from urllib.parse import urlsplit
-import numpy as np
-from pprint import pprint
-import requests
-import subprocess
+import os
 import json
+import subprocess
 import time
+from abc import ABC, abstractmethod
+from pprint import pprint
 from typing import Optional
+from urllib.parse import urlsplit
+
+import gevent
+import numpy as np
+import requests
+
 
 def encode_image(image_path):
+    """
+    Encode image data from file path.
+    
+    Args:
+        image_path (str): Path to the image file.
+        
+    Returns:
+        numpy.ndarray: Image data.
+    """
     image_data = np.fromfile(image_path, dtype="uint8")
     image_data = np.expand_dims(image_data, axis=0)
     return image_data
@@ -26,7 +39,7 @@ class BasePredictor(ABC):
         raise NotImplementedError("Request method not implemented.")
 
     @abstractmethod
-    def format_response(self, response: str) -> np.ndarray:
+    def format_response(self, response) -> np.ndarray:
         """To be implemented by concrete classes."""
         raise NotImplementedError("Format response method not implemented.")
 
@@ -43,7 +56,16 @@ class HttpPredictor(BasePredictor):
         self.url = url
         self.headers = {"Content-Type": "application/json"}
 
-    def _create_payload(self, image):
+    def _create_payload(self, image: np.ndarray) -> dict:
+        """
+        Create the payload for the HTTP request.
+        
+        Args:
+            image (numpy.ndarray): The input image.
+            
+        Returns:
+            dict: The payload for the HTTP request.     
+        """
         return {
             "inputs": [
                 {
@@ -61,7 +83,7 @@ class HttpPredictor(BasePredictor):
         latency = time.time() - tic
         return response.json(), latency
     
-    def format_response(self, response):
+    def format_response(self, response: dict) -> np.ndarray:
         out =  np.array(response['outputs'][0]['data']).astype(np.float32)
         num_detections = out.shape[0] // 5
         return out.reshape((num_detections, 5))
@@ -85,6 +107,12 @@ class VertexAIPredictor(HttpPredictor):
         }
     
     def _get_google_access_token(self):
+        """
+        Fetch the Google access token.
+        
+        Returns:
+            str: The Google access token.
+        """
         result = subprocess.run(['gcloud', 'auth', 'print-access-token'], stdout=subprocess.PIPE, text=True)
         return result.stdout.strip()
 
@@ -124,6 +152,7 @@ class TritonClientPredictor(BasePredictor):
 
         self.endpoint = endpoint
         self.url = url
+        self.headers = {"admin-key": os.getenv("TRITON_ADMIN_KEY", "")}
         
         print(f"Connecting to Triton server at {self.url} with endpoint {self.endpoint} using {scheme}...")
 
@@ -135,14 +164,21 @@ class TritonClientPredictor(BasePredictor):
             config = self.triton_client.get_model_config(endpoint, as_json=True)["config"]
         else:
             import tritonclient.http as client  # noqa
+            
+            if scheme == "https":
+                ssl = True
+                ssl_context_factory = gevent.ssl.create_default_context
+            else:
+                ssl = False
+                ssl_context_factory = None
 
-            self.triton_client = client.InferenceServerClient(url=self.url, verbose=False, ssl=True)
-            config = self.triton_client.get_model_config(endpoint)
+            self.triton_client = client.InferenceServerClient(url=self.url, verbose=False, ssl=ssl, ssl_context_factory=ssl_context_factory)
+            config = self.triton_client.get_model_config(endpoint, headers=self.headers)
 
         # Sort output names alphabetically, i.e. 'output0', 'output1', etc.
         config["output"] = sorted(config["output"], key=lambda x: x.get("name"))
 
-        pprint(self.triton_client.get_inference_statistics(model_name=self.endpoint))
+        pprint(self.triton_client.get_inference_statistics(model_name=self.endpoint, headers=self.headers))
         # pprint(self.triton_client.get_model_repository_index())
         
         # Define model attributes
@@ -178,12 +214,22 @@ class TritonClientPredictor(BasePredictor):
         infer_outputs = [self.InferRequestedOutput(output_name) for output_name in self.output_names]
         
         tic = time.time()
-        outputs = self.triton_client.infer(model_name=self.endpoint, inputs=infer_inputs, outputs=infer_outputs)
+        outputs = self.triton_client.infer(model_name=self.endpoint, inputs=infer_inputs, outputs=infer_outputs, response_compression_algorithm='deflate', headers=self.headers)
         latency = time.time() - tic
 
         return outputs.as_numpy(self.output_names[0]).astype(self.np_output_formats[0]), latency
     
     def format_response(self, response):
+        """
+        Format the response from the model.
+            [-1, 5] -> [num_detections, 5]
+            
+        Args:
+            response (numpy.ndarray): The model response.
+            
+        Returns:
+            numpy.ndarray: The formatted response.
+        """
         num_detections = response.shape[0]
         return response.reshape((num_detections, 5))
  

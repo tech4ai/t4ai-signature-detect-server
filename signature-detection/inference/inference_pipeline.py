@@ -1,9 +1,22 @@
 import os
-import numpy as np
 from pprint import pprint
-from predictors import BasePredictor, HttpPredictor, VertexAIPredictor, TritonClientPredictor
+from dotenv import load_dotenv
+
+import numpy as np
+from predictors import (BasePredictor, HttpPredictor, TritonClientPredictor,
+                        VertexAIPredictor)
+
 
 def encode_image(image_path):
+    """
+    Encode an image file as a numpy array in uint8 format and add a batch dimension.
+    
+    Args:
+        image_path (str): Path to the image file.
+        
+    Returns:
+        image_data (numpy.ndarray): Image data as a numpy array with shape (1, H, W, C).
+    """
     image_data = np.fromfile(image_path, dtype="uint8")
     image_data = np.expand_dims(image_data, axis=0)
     return image_data
@@ -33,45 +46,69 @@ class InferencePipeline:
             "detection_scores" : response[:, 4],
         }
             
-## Main Execution
-def main():
-    # Paths
-    root_dir_images = "/home/samuel/Downloads/Signature Detection.v3i.yolov8/test/images"
-    image_paths = [os.path.join(root_dir_images, img) for img in os.listdir(root_dir_images) if img.endswith(".jpg")]
+def get_image_paths(dataset_dir):
+    """Retrieve all image paths from the dataset directory."""
+    root_dir_images = os.path.join(dataset_dir, "test", "images")
+    return [
+        os.path.join(root_dir_images, img)
+        for img in os.listdir(root_dir_images) if img.endswith(".jpg")
+    ]
 
-    predictors = {
-        '1': (HttpPredictor, {"url": "https://t4ai-signature-detector-100881400340.us-central1.run.app/v2/models/yolov8_ensemble/infer"}),
-        '2': (TritonClientPredictor, {"url": "https://t4ai-signature-detector-100881400340.us-central1.run.app/yolov8_ensemble"}),
-        '3': (VertexAIPredictor, {"url": "https://8605861017928335360.us-central1-100881400340.prediction.vertexai.goog/v1/projects/100881400340/locations/us-central1/endpoints/8605861017928335360:rawPredict"}),
+def select_predictor():
+    """Display a menu to select the predictor type and return the selected predictor class and URL."""
+    predictor_classes = {
+        '1': (HttpPredictor, "HTTP Predictor", "http://<host>/v2/models/<model_name>/infer\n - http://localhost:8000/v2/models/yolov8_ensemble/infer (local)\n - https://t4ai-signature-detector-100881400340.us-central1.run.app/v2/models/yolov8_ensemble/infer (Cloud Run)"),
+        '2': (TritonClientPredictor, "Triton Client Predictor", "http://<host>/<model_name>\n - http://localhost:8000/yolov8_ensemble (local)\n - https://t4ai-signature-detector-100881400340.us-central1.run.app/yolov8_ensemble (Cloud Run)"),
+        '3': (VertexAIPredictor, "VertexAI Predictor", "https://<vertex_endpoint>")
     }
 
-    # Menu for selecting predictor
-    print("Select predictor:")
-    for key, value in predictors.items():
-        print(f"{key}: {value[0].__name__}")
-        
-    selected = input("Enter number: ")
-    predictor = predictors[selected][0](**predictors[selected][1])
+    print("Selecione o tipo de predictor:")
+    for key, (cls, name, _) in predictor_classes.items():
+        print(f"{key}: {name}")
 
-    print(f"Using predictor: {predictor.__class__.__name__}")
-    
-    # Run Pipeline
-    pipeline = InferencePipeline(predictor)
-    
-    # First inference for warm-up
-    print("Running inference on first image...")
+    predictor_type = input("Digite o número do tipo de predictor: ").strip()
+    predictor_info = predictor_classes.get(predictor_type)
+
+    if not predictor_info:
+        raise ValueError("Tipo de predictor inválido.")
+
+    _, name, example = predictor_info
+    print(f"Usando {name}")
+    print(f"Digite a URL do endpoint\n Exemplo: {example}")
+    url = input("URL: ").strip()
+
+    return predictor_info[0], url
+
+def run_pipeline(pipeline, image_paths):
+    """Run the inference pipeline on all images and print results."""
+    print("Executando inferência na primeira imagem para aquecimento...")
     pipeline.run(image_paths[0])
-    
-    print("Running inference on all images...")
-    i_times = []
+
+    print("Executando inferência em todas as imagens...")
+    inference_times = []
     for image_path in image_paths:
-        r = pipeline.run(image_path)
-        pprint(r)
-        i_times.append(r['inference_time'])
-        pprint(r)
-    
-    print(f"Average inference time: {np.mean(i_times)}")
-    
+        result = pipeline.run(image_path)
+        pprint(result)
+        inference_times.append(result['inference_time'])
+
+    print(f"Tempo médio de inferência: {np.mean(inference_times)} ms")
+
+def main():
+    load_dotenv()
+
+    # Paths
+    HOME = os.getcwd()
+    DATASET_DIR = os.path.join(HOME, "signature-detection", "data", "datasets")
+    image_paths = get_image_paths(DATASET_DIR)
+
+    # Predictor selection
+    predictor_class, url = select_predictor()
+    predictor = predictor_class(url=url)
+    print(f"Usando o predictor: {predictor.__class__.__name__}")
+
+    # Run pipeline
+    pipeline = InferencePipeline(predictor)
+    run_pipeline(pipeline, image_paths)
+
 if __name__ == "__main__":
     main()
-    
