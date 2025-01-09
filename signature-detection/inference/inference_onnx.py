@@ -1,4 +1,5 @@
 import argparse
+import os
 
 import cv2
 import numpy as np
@@ -200,10 +201,29 @@ class YOLOv8:
 
 
 if __name__ == "__main__":
+    # Define the default path to the model and data
+    default_model_path = os.path.abspath(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "models", "yolov8s", "1", "model.onnx")
+    )
+    
+    if not os.path.exists(default_model_path):
+        print(f"Model not found at: {default_model_path}")
+        print("Check the utils folder and scripts for download the model. Or specify the path to the model using the --model argument.")
+        exit(1)
+    
+    default_image_path = os.path.abspath(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "datasets", "test", "images", "image_6_png_jpg.rf.2b03794bddefe46c7386a01c46fcca24.jpg")
+    )
+    
+    if not os.path.exists(default_image_path):
+        print(f"Image not found at: {default_image_path}")
+        print("Check the data folder and scripts for download the image. Or specify the path to the image using the --img argument.")
+        exit(1)
+    
     # Create an argument parser to handle command-line arguments
     parser = argparse.ArgumentParser()
-REDACTED_PATH
-REDACTED_PATH
+    parser.add_argument("--model", type=str, default=default_model_path, help="Input your ONNX model.")
+    parser.add_argument("--img", type=str, default=default_image_path, help="Path to input image.")
     parser.add_argument("--conf-thres", type=float, default=0.5, help="Confidence threshold")
     parser.add_argument("--iou-thres", type=float, default=0.5, help="NMS IoU threshold")
     args = parser.parse_args()
@@ -218,7 +238,6 @@ REDACTED_PATH
     output_image = detection.main()
 
     # Display the output image in a window
-    cv2.namedWindow("Output", cv2.WINDOW_NORMAL)
     cv2.imshow("Output", output_image)
 
     # Wait for a key press to exit
