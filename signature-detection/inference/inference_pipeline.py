@@ -46,9 +46,9 @@ class InferencePipeline:
             "detection_scores" : response[:, 4],
         }
             
-def get_image_paths(dataset_dir):
+def get_image_paths(dataset_dir, split="test"):
     """Retrieve all image paths from the dataset directory."""
-    root_dir_images = os.path.join(dataset_dir, "test", "images")
+    root_dir_images = os.path.join(dataset_dir, split, "images")
     return [
         os.path.join(root_dir_images, img)
         for img in os.listdir(root_dir_images) if img.endswith(".jpg")
@@ -86,20 +86,29 @@ def run_pipeline(pipeline, image_paths):
 
     print("Executando inferência em todas as imagens...")
     inference_times = []
+    
     for image_path in image_paths:
         result = pipeline.run(image_path)
         pprint(result)
         inference_times.append(result['inference_time'])
 
-    print(f"Tempo médio de inferência: {np.mean(inference_times)} ms")
+    print(f"Tempo médio de inferência: {np.mean(inference_times)} s")
 
 def main():
-    load_dotenv()
+    dotenv_path = os.path.abspath(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".env")
+    )
+    load_dotenv(dotenv_path=dotenv_path, verbose=True, override=True)
 
     # Paths
     HOME = os.getcwd()
+    
     DATASET_DIR = os.path.join(HOME, "signature-detection", "data", "datasets")
-    image_paths = get_image_paths(DATASET_DIR)
+    
+    train_image_paths = get_image_paths(DATASET_DIR, "train")
+    test_image_paths = get_image_paths(DATASET_DIR, "test")
+    val_image_paths = get_image_paths(DATASET_DIR, "valid")
+    image_paths = train_image_paths + test_image_paths + val_image_paths
 
     # Predictor selection
     predictor_class, url = select_predictor()
