@@ -1,25 +1,16 @@
 import os
-from pprint import pprint
 from dotenv import load_dotenv
 
 import numpy as np
-from predictors import (BasePredictor, HttpPredictor, TritonClientPredictor,
-                        VertexAIPredictor)
+from tqdm import tqdm
+from inference.predictors import (
+    BasePredictor,
+    HttpPredictor,
+    TritonClientPredictor,
+    VertexAIPredictor,
+    encode_image,
+)
 
-
-def encode_image(image_path):
-    """
-    Encode an image file as a numpy array in uint8 format and add a batch dimension.
-    
-    Args:
-        image_path (str): Path to the image file.
-        
-    Returns:
-        image_data (numpy.ndarray): Image data as a numpy array with shape (1, H, W, C).
-    """
-    image_data = np.fromfile(image_path, dtype="uint8")
-    image_data = np.expand_dims(image_data, axis=0)
-    return image_data
 
 ## Inference Pipeline
 class InferencePipeline:
@@ -28,38 +19,49 @@ class InferencePipeline:
     def __init__(self, predictor: BasePredictor):
         self.predictor = predictor
 
-    def run(self, image_path):
+    def run(self, image_path: str, conf: float = 0.25, iou: float = 0.5):
         """Run the inference pipeline."""
         image_data = encode_image(image_path)
 
-        response, mean_time = self.predictor.predict(image_data)
-        
+        response, mean_time = self.predictor.predict(image_data, conf, iou)
+
         result = self._process_response(response)
-   
-        return {'result' : result, 'inference_time': mean_time}
+
+        return {"result": result, "inference_time": mean_time}
 
     def _process_response(self, response):
         """Extract predictions from response."""
         # Separar bounding boxes e scores
         return {
             "detection_boxes": response[:, :4],
-            "detection_scores" : response[:, 4],
+            "detection_scores": response[:, 4],
         }
-            
+
+
 def get_image_paths(dataset_dir, split="test"):
     """Retrieve all image paths from the dataset directory."""
     root_dir_images = os.path.join(dataset_dir, split, "images")
     return [
         os.path.join(root_dir_images, img)
-        for img in os.listdir(root_dir_images) if img.endswith(".jpg")
+        for img in os.listdir(root_dir_images)
+        if img.endswith(".jpg")
     ]
+
 
 def select_predictor():
     """Display a menu to select the predictor type and return the selected predictor class and URL."""
     predictor_classes = {
-        '1': (HttpPredictor, "HTTP Predictor", "http://<host>/v2/models/<model_name>/infer\n - http://localhost:8000/v2/models/yolov8_ensemble/infer (local)\n - https://t4ai-signature-detector-100881400340.us-central1.run.app/v2/models/yolov8_ensemble/infer (Cloud Run)"),
-        '2': (TritonClientPredictor, "Triton Client Predictor", "http://<host>/<model_name>\n - http://localhost:8000/yolov8_ensemble (local)\n - https://t4ai-signature-detector-100881400340.us-central1.run.app/yolov8_ensemble (Cloud Run)"),
-        '3': (VertexAIPredictor, "VertexAI Predictor", "https://<vertex_endpoint>")
+        "1": (
+            HttpPredictor,
+            "HTTP Predictor",
+            "http://<host>/v2/models/<model_name>/infer\n - http://localhost:8000/v2/models/yolov8_ensemble/infer (local)\n - https://t4ai-signature-detector-100881400340.us-central1.run.app/v2/models/yolov8_ensemble/infer (Cloud Run)",
+        ),
+        "2": (
+            TritonClientPredictor,
+            "Triton Client Predictor",
+            "http://<host>/<model_name>\n - http://localhost:8000/yolov8_ensemble (local)\n - https://t4ai-signature-detector-100881400340.us-central1.run.app/yolov8_ensemble (Cloud Run)",
+        ),
+        "3": (VertexAIPredictor, "VertexAI Predictor", "https://<vertex_endpoint>"),
     }
 
     print("Selecione o tipo de predictor:")
@@ -79,20 +81,34 @@ def select_predictor():
 
     return predictor_info[0], url
 
-def run_pipeline(pipeline, image_paths):
+
+def run_pipeline(pipeline: InferencePipeline, image_paths):
     """Run the inference pipeline on all images and print results."""
     print("Executando inferência na primeira imagem para aquecimento...")
     pipeline.run(image_paths[0])
 
     print("Executando inferência em todas as imagens...")
     inference_times = []
-    
-    for image_path in image_paths:
-        result = pipeline.run(image_path)
-        pprint(result)
-        inference_times.append(result['inference_time'])
 
-    print(f"Tempo médio de inferência: {np.mean(inference_times)} s")
+    # Criando barra de progresso
+    progress_bar = tqdm(
+        image_paths,
+        desc="Processando imagens",
+        unit="img",
+        ncols=100,
+        bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]",
+        dynamic_ncols=True,
+    )
+
+    for image_path in progress_bar:
+        result = pipeline.run(image_path)
+        current_time = result["inference_time"]
+        # Atualiza a descrição da barra com o tempo de inferência atual
+        progress_bar.set_description(f"Tempo atual: {current_time:.3f}s")
+        inference_times.append(current_time)
+
+    print(f"\nTempo médio de inferência: {np.mean(inference_times):.3f} s")
+
 
 def main():
     dotenv_path = os.path.abspath(
@@ -102,9 +118,9 @@ def main():
 
     # Paths
     HOME = os.getcwd()
-    
+
     DATASET_DIR = os.path.join(HOME, "signature-detection", "data", "datasets")
-    
+
     train_image_paths = get_image_paths(DATASET_DIR, "train")
     test_image_paths = get_image_paths(DATASET_DIR, "test")
     val_image_paths = get_image_paths(DATASET_DIR, "valid")
@@ -118,6 +134,7 @@ def main():
     # Run pipeline
     pipeline = InferencePipeline(predictor)
     run_pipeline(pipeline, image_paths)
+
 
 if __name__ == "__main__":
     main()
