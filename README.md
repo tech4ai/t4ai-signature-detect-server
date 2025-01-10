@@ -28,8 +28,10 @@ This project provides a  pipeline for deploying and performing inference with a 
 - [Features](#%EF%B8%8F-features)
 - [Dependencies](#-dependencies)
 - [Installation](#installation)
-- [Inference](#inference)
 - [Ensemble Model](#ensemble-model)
+- [Inference](#inference)
+- [Limit Endpoint Access](#limit-endpoint-access)
+- [Model Analyzer](#-model-analyzer)
 - [Notes](#-notes)
 - [License](#-license)
 
@@ -37,23 +39,26 @@ This project provides a  pipeline for deploying and performing inference with a 
 ## 📁 Project Structure
 
 ### Key Files
-- **`requirements.txt`**: Lists the external libraries and dependencies required for the project.
-- **`server/`**: Contains scripts for deploying the model to Triton Inference Server.
-  - **`local/`**: Scripts for running the Triton Inference Server locally.
-  - **`vertexai/`**: Scripts for deploying the model to Vertex AI Endpoint.
-- **`signature-detection/`**: Contains scripts for performing inference with the YOLOv8 model.
-   - **`analyzer/`**: Contains results and configuration for performance analysis using Triton Model Analyzer.
-   - **`inference/`**: Scripts for performing inference using Triton Client, Vertex AI, or locally and GUI for visualization.
-      - **`inference_gui.py`**: Script for running the Gradio interface for inference.
-      - **`inference_onnx.py`**: Script for performing inference with ONNX runtime locally.
-      - **`inference_pipeline.py`**: Script for performing inference on images using different methods.
-      - **`predictors.py`**: Contains the predictor classes for different inference methods. You can add new predictors for custom inference methods.
-   - **`models/`**: Contains the Model Repository for Triton Server, including the YOLOv8 model and pre/post-processing scripts in a Ensemble Model.
-   - **`data/`**: Contains the datasets and data processing scripts.
-   - **`utils`**: Scripts for uploading/download the model to/from Google Cloud Storage and exporting the model to ONNX/TensorRT format.
-- **`Dockerfile`**: Contains the configuration for building the Docker image for Triton Inference Server. 
-- **`entrypoint.sh`**: Script for initializing the Triton Inference Server with the required configurations.
-- **`LICENSE`**: The license for the project.
+- **[`requirements.txt`](requirements.txt)**: Lists the external libraries and dependencies required for the project.
+- **[`server/`](./server/)**: Contains scripts for deploying the model to Triton Inference Server.
+  - **[`local/`](./server/local/)**: Scripts for running the Triton Inference Server locally.
+  - **[`vertexai/`](./server/vertexai/)**: Scripts for deploying the model to Vertex AI Endpoint.
+- **[`signature-detection/`](./signature-detection/)**: Contains scripts for performing inference with the YOLOv8 model.
+   - **[`analyzer/`](./signature-detection/analyzer/)**: Contains results and configuration for performance analysis using Triton Model Analyzer.
+   - **[`inference/`](./signature-detection/inference/)**: Scripts for performing inference using Triton Client, Vertex AI, or locally and GUI for visualization.
+      - **[`inference_onnx.py`](./signature-detection/inference/inference_onnx.py)**: Script for performing inference with ONNX runtime locally.
+      - **[`inference_pipeline.py`](./signature-detection/inference/inference_pipeline.py)**: Script for performing inference on images using different methods.
+      - **[`predictors.py`](./signature-detection/inference/predictors.py)**: Contains the predictor classes for different inference methods. You can add new predictors for custom inference methods.
+  - **[`gui/`](./signature-detection/gui/)**: Contains the Gradio interface for interacting with the deployed model. The [`inference_gui.py`](./signature-detection/gui/inference_gui.py) script can be used to test the model in real time. The UI has built-in examples and plots of results and performance.
+   - **[`models/`](./signature-detection/models/)**: Contains the Model Repository for Triton Server, including the YOLOv8 model and pre/post-processing scripts in a Ensemble Model.
+   - **[`data/`](./signature-detection/data/)**: Contains the datasets and data processing scripts.
+   - **[`utils`](./signature-detection/utils/)**: Scripts for uploading/download the model to/from Google Cloud Storage and exporting the model to ONNX/TensorRT format.
+- **[`Dockerfile`](Dockerfile)**: Contains the configuration for building the Docker image for Triton Inference Server. 
+  - **[`Dockerfile.dev`](Dockerfile.dev)**: Contains the configuration for building the Docker image for local development.
+  - **[`docker-compose.yml`](docker-compose.yml)**: Contains the configuration for running Dockerfile.dev.
+
+- **[`entrypoint.sh`](entrypoint.sh)**: Script for initializing the Triton Inference Server with the required configurations.
+- **[`LICENSE`](LICENSE)**: The license for the project.
 
 ## 🛠️ Features
 
@@ -75,7 +80,7 @@ To get started, ensure you have the following installed:
 - **Google Cloud SDK**: Required for interacting with Google Cloud Storage and (Optional) Vertex AI.
 - **Prometheus** (Optional): For monitoring the performance of the Triton Inference Server.
 
-## Installation 
+## 💻 Installation 
 
 1. **Clone the repository**:
    ```bash
@@ -91,11 +96,87 @@ To get started, ensure you have the following installed:
    - **Docker:** Run the Triton Inference Server using the provided [Dockerfile](Dockerfile.dev) The [`serve_triton_local_.py`](server/local/serve_triton_local.py) script can be used to start the server locally.
     - **docker compose:** You can use the provided [`docker-compose.yml`](docker-compose.yml).
 5. **Run inference**: The scripts in signature-detection/inference can be used to perform inference on images using differents methods (requests, triton client, vertex ai).
-   - **GUI:** Use the [`inference_gui.py`](signature-detection/inference/inference_gui.py) to test the deployed model and visualize the results.
+   - **GUI:** Use the [`inference_gui.py`](signature-detection/gui/inference_gui.py) to test the deployed model and visualize the results.
    - **CLI:** Use the [`inference_pipeline.py`](signature-detection/inference/inference_pipeline.py) script to select predictor and perform inference on test dataset images.
    - **ONNX:** Use the [`inference_onnx.py`](signature-detection/inference/inference_onnx.py) script to perform inference with the ONNX runtime locally.
 
-## Inference 
+## 🧩  Ensemble Model
+
+The repository includes an [Ensemble Model](https://docs.nvidia.com/deeplearning/triton-inference-server/user-guide/docs/user_guide/architecture.html#ensemble-models) for the YOLOv8 object detection model. The Ensemble Model combines the YOLOv8 model with pre and post-processing scripts to perform inference on images. The model repository is located in the [`models/`](signature-detection/models) directory.
+
+```mermaid
+flowchart TB
+    subgraph "Triton Inference Server"
+        direction TB
+        subgraph "Ensemble Model Pipeline"
+            direction TB
+            subgraph Input
+                raw["raw_image
+                 (UINT8, [-1])"]
+                conf["confidence_threshold
+                 (FP16, [1])"]
+                iou["iou_threshold
+                 (FP16, [1])"]
+            end
+
+            subgraph "Preprocess Py-Backend"
+                direction TB
+                pre1["Decode Image
+                    BGR to RGB"]
+                pre2["Resize (640x640)"]
+                pre3["Normalize (/255.0)"]
+                pre4["Transpose
+                [H,W,C]->[C,H,W]"]
+                pre1 --> pre2 --> pre3 --> pre4
+            end
+
+            subgraph "YOLOv8 Model ONNX Backend"
+                yolo["Inference YOLOv8s"]
+            end
+
+            subgraph "Postproces Python Backend"
+                direction TB
+                post1["Transpose
+                   Outputs"]
+                post2["Filter Boxes (confidence_threshold)"]
+                post3["NMS (iou_threshold)"]
+                post4["Format Results [x,y,w,h,score]"]
+                post1 --> post2 --> post3 --> post4
+            end
+
+            subgraph Output
+                result["detection_result
+                    (FP16, [-1,5])"]
+            end
+
+            raw --> pre1
+            pre4 --> |"preprocessed_image (FP32, [3,-1,-1])"| yolo
+            yolo --> |"output0"| post1
+            conf --> post2
+            iou --> post3
+            post4 --> result
+        end
+    end
+
+    subgraph Client
+        direction TB
+        client_start["Client Application"]
+        response["Detections Result
+                [x,y,w,h,score]"]
+    end
+
+    client_start -->|"HTTP/gRPC Request
+          with raw image
+          confidence_threshold
+          iou_threshold"| raw
+    result -->|"HTTP/gRPC Response with detections"| response
+
+    style Client fill:#e6f3ff,stroke:#333
+    style Input fill:#f9f,stroke:#333
+    style Output fill:#9ff,stroke:#333
+```
+
+## ⚡ Inference 
 
 The [`inference_pipeline.py`](signature-detection/inference/inference_pipeline.py) script can be used to perform inference on images using different methods. The script supports the following methods:
 
@@ -141,76 +222,8 @@ classDiagram
     InferencePipeline --> BasePredictor : uses
 ```
 
-## Ensemble Model
 
-The repository includes an [Ensemble Model](https://docs.nvidia.com/deeplearning/triton-inference-server/user-guide/docs/user_guide/architecture.html#ensemble-models) for the YOLOv8 object detection model. The Ensemble Model combines the YOLOv8 model with pre and post-processing scripts to perform inference on images. The model repository is located in the [`models/`](signature-detection/models) directory.
-
-```mermaid
-flowchart TB
-
-    subgraph "Triton Inference Server"
-        direction TB
-        subgraph "Ensemble Model Pipeline"
-            direction TB
-            subgraph Input
-                raw["raw_image 
-                (UINT8, [-1])"]
-            end
-
-            subgraph "Preprocess Py-Backend"
-                direction TB
-                pre1["Decode Image
-                    BGR to RGB"]
-                pre2["Resize (640x640)"]
-                pre3["Normalize (/255.0)"]
-                pre4["Transpose
-                [H,W,C]->[C,H,W]"]
-                pre1 --> pre2 --> pre3 --> pre4
-            end
-
-            subgraph "YOLOv8 Model ONNX Backend"
-                yolo["Inference YOLOv8s"]
-            end
-
-            subgraph "Postproces Python Backend"
-                direction TB
-                post1["Transpose 
-                  Outputs"]
-                post2["Filter Boxes (score > 0.1)"]
-                post3["NMS (threshold=0.45)"]
-                post4["Format Results [x,y,w,h,score]"]
-                post1 --> post2 --> post3 --> post4
-            end
-
-            subgraph Output
-                result["detection_result
-                    (FP32, [-1,5])"]
-            end
-
-            raw --> pre1
-            pre4 --> |"preprocessed_image (FP32, [3,-1,-1])"| yolo
-            yolo --> |"output0"| post1
-            post4 --> result
-        end
-    end
-
-    subgraph Client
-        direction TB
-        client_start["Client Application"]
-        response["Detections Result
-                [x,y,w,h,score]"]
-    end
-    
-    client_start -->|"HTTP/gRPC Request
-          with raw image"| raw
-    result -->|"HTTP/gRPC Response with detections"| response
-
-    style Client fill:#e6f3ff,stroke:#333
-    style Input fill:#f9f,stroke:#333
-    style Output fill:#9ff,stroke:#333
-```
-
-## Limit Endpoint Access
+## 🔒 Limit Endpoint Access
 
 To limit access to some protocols of the server, you can use the `--http-restricted-api` or `--grpc-restricted-protocol` flags. This will restrict the determined protocol to only allow acces by a <restricted-key>=<restricted-value> pair in the request headers. 
 
@@ -257,7 +270,7 @@ You can modify the [`perf.yaml`](signature-detection/analyzer/config/perf.yaml) 
 
 ## 📝 Notes
 
-- The repository includes various scripts for automation, such as [`upload_models_to_gcs.py`](server/upload_models_to_gcs.py), [`download_from_gcs.py`](server/download_from_gcs.py),[`export_onnx_model.py`](server/export_onnx_model.py), and deployment scripts.
+- The repository includes various scripts for automation, such as [`upload_models_to_gcs.py`](./signature-detection/utils/upload_models_to_gcs.py), [`download_from_gcs.py`](./signature-detection/utils/download_from_gcs.py),[`export_model.py`](./signature-detection/utils/export_model.py), and deployment scripts.
 - Performance tuning can be done using the `perf.yaml` file and related scripts to analyze and optimize the model's performance.
 - Contributions are welcome! Feel free to open issues and pull requests.
 
