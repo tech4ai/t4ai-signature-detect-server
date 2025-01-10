@@ -6,13 +6,23 @@ input [
   {
     name: "raw_image"
     data_type: TYPE_UINT8
-    dims: [-1] 
+    dims: [-1]
+  },
+  {
+    name: "confidence_threshold"
+    data_type: TYPE_FP16
+    dims: [1]
+  },
+  {
+    name: "iou_threshold"
+    data_type: TYPE_FP16
+    dims: [1]
   }
 ]
 output [
     {
       name: "detection_result"
-      data_type: TYPE_FP32
+      data_type: TYPE_FP16
       dims: [-1, 5]
     }
 ]
@@ -49,6 +59,14 @@ ensemble_scheduling {
       input_map {
         key: "postprocess_input"
         value: "output0"
+      }
+      input_map {
+        key: "confidence_threshold"
+        value: "confidence_threshold"
+      }
+      input_map {
+        key: "iou_threshold"
+        value: "iou_threshold"
       }
       output_map {
         key: "detection_result"

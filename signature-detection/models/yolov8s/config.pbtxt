@@ -22,7 +22,7 @@ instance_group {
 }
 
 dynamic_batching {
-  max_queue_delay_microseconds: 0
+  max_queue_delay_microseconds: 100
 }
 
 optimization { execution_accelerators {

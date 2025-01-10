@@ -18,4 +18,11 @@ output [
     }
 ]
 
-instance_group { kind: KIND_CPU }
+dynamic_batching {
+  max_queue_delay_microseconds: 100
+}
+
+instance_group {
+  count: 1
+  kind: KIND_CPU
+}
