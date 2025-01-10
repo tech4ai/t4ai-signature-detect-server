@@ -164,3 +164,9 @@ cython_debug/
 server/vertexai/test
 signature-detection/inference/tmp
 signature-detection/data/datasets
+
+.vscode/
+.gradio/
+*.db
+*.sqlite3
+/signature-detection/gui/tmp/temp_image.jpg
