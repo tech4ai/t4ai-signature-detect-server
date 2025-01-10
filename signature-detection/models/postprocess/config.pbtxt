@@ -7,13 +7,28 @@ input {
   data_type: TYPE_FP32
   dims: [5, -1]
 }
+input {
+  name: "confidence_threshold"
+  data_type: TYPE_FP16
+  dims: [1]
+}
+input {
+  name: "iou_threshold"
+  data_type: TYPE_FP16
+  dims: [1]
+}
 
-output [
-    {
-      name: "detection_result"
-      data_type: TYPE_FP32 
-      dims: [-1, 5]
-    }
-]
+output {
+  name: "detection_result"
+  data_type: TYPE_FP16
+  dims: [-1, 5]
+}
 
-instance_group { kind: KIND_CPU }
+dynamic_batching {
+  max_queue_delay_microseconds: 100
+}
+
+instance_group {
+  count: 2
+  kind: KIND_CPU
+}

@@ -14,17 +14,18 @@ import requests
 
 def encode_image(image_path):
     """
-    Encode image data from file path.
-    
+    Encode an image file as a numpy array in uint8 format and add a batch dimension.
+
     Args:
         image_path (str): Path to the image file.
-        
+
     Returns:
-        numpy.ndarray: Image data.
+        image_data (numpy.ndarray): Image data as a numpy array with shape (1, H, W, C).
     """
     image_data = np.fromfile(image_path, dtype="uint8")
     image_data = np.expand_dims(image_data, axis=0)
     return image_data
+
 
 ## Strategy Pattern for Inference
 class BasePredictor(ABC):
@@ -32,9 +33,11 @@ class BasePredictor(ABC):
 
     def __init__(self):
         pass
-    
+
     @abstractmethod
-    def request(self, input: np.ndarray) -> tuple[dict, float]:
+    def request(
+        self, input: np.ndarray, confidence_threshold: float, iou_threshold: float
+    ) -> tuple[dict, float]:
         """To be implemented by concrete classes."""
         raise NotImplementedError("Request method not implemented.")
 
@@ -43,11 +46,14 @@ class BasePredictor(ABC):
         """To be implemented by concrete classes."""
         raise NotImplementedError("Format response method not implemented.")
 
-    def predict(self, input: np.ndarray) -> tuple[np.ndarray, float]:
+    def predict(
+        self, input: np.ndarray, confidence_threshold: float, iou_threshold: float
+    ) -> tuple[np.ndarray, float]:
         """To be implemented by concrete classes."""
-        response, mean_time = self.request(input)
+        response, mean_time = self.request(input, confidence_threshold, iou_threshold)
         return self.format_response(response), mean_time
-    
+
+
 class HttpPredictor(BasePredictor):
     """Inference predictor for local models."""
 
@@ -56,15 +62,19 @@ class HttpPredictor(BasePredictor):
         self.url = url
         self.headers = {"Content-Type": "application/json"}
 
-    def _create_payload(self, image: np.ndarray) -> dict:
+    def _create_payload(
+        self, image: np.ndarray, confidence_threshold: float, iou_threshold: float
+    ) -> dict:
         """
         Create the payload for the HTTP request.
-        
+
         Args:
             image (numpy.ndarray): The input image.
-            
+            confidence_threshold (float): Confidence threshold for detections.
+            iou_threshold (float): IOU threshold for NMS.
+
         Returns:
-            dict: The payload for the HTTP request.     
+            dict: The payload for the HTTP request.
         """
         return {
             "inputs": [
@@ -72,49 +82,73 @@ class HttpPredictor(BasePredictor):
                     "name": "raw_image",
                     "shape": image.shape,
                     "datatype": "UINT8",
-                    "data": image.tolist()
-                }
+                    "data": image.tolist(),
+                },
+                {
+                    "name": "confidence_threshold",
+                    "shape": [1],
+                    "datatype": "FP16",
+                    "data": [np.float16(confidence_threshold)],
+                },
+                {
+                    "name": "iou_threshold",
+                    "shape": [1],
+                    "datatype": "FP16",
+                    "data": [np.float16(iou_threshold)],
+                },
             ]
         }
 
-    def request(self, input: np.ndarray) -> tuple[dict, float]:
+    def request(
+        self, input: np.ndarray, confidence_threshold: float, iou_threshold: float
+    ) -> tuple[dict, float]:
         tic = time.time()
-        response = requests.post(self.url, headers=self.headers, data=json.dumps(self._create_payload(input)))
+        response = requests.post(
+            self.url,
+            headers=self.headers,
+            data=json.dumps(
+                self._create_payload(input, confidence_threshold, iou_threshold)
+            ),
+        )
         latency = time.time() - tic
         return response.json(), latency
-    
+
     def format_response(self, response: dict) -> np.ndarray:
-        out =  np.array(response['outputs'][0]['data']).astype(np.float32)
+        out = np.array(response["outputs"][0]["data"]).astype(np.float32)
         num_detections = out.shape[0] // 5
         return out.reshape((num_detections, 5))
+
 
 class VertexAIPredictor(HttpPredictor):
     """Inference predictor for Vertex AI models."""
 
     def __init__(self, url, access_token: Optional[str] = None):
         super().__init__(url=url)
-   
+
         if access_token is None:
             try:
                 self.access_token = self._get_google_access_token()
             except Exception as e:
                 print("Error fetching access token:", e)
                 return
-                
+
         self.headers = {
             "Authorization": f"Bearer {access_token}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
-    
+
     def _get_google_access_token(self):
         """
         Fetch the Google access token.
-        
+
         Returns:
             str: The Google access token.
         """
-        result = subprocess.run(['gcloud', 'auth', 'print-access-token'], stdout=subprocess.PIPE, text=True)
+        result = subprocess.run(
+            ["gcloud", "auth", "print-access-token"], stdout=subprocess.PIPE, text=True
+        )
         return result.stdout.strip()
+
 
 class TritonClientPredictor(BasePredictor):
     """
@@ -153,36 +187,43 @@ class TritonClientPredictor(BasePredictor):
         self.endpoint = endpoint
         self.url = url
         self.headers = {"admin-key": os.getenv("TRITON_ADMIN_KEY", "")}
-        
-        print(f"Connecting to Triton server at {self.url} with endpoint {self.endpoint} using {scheme}...")
 
-        # Choose the Triton client based on the communication scheme
-        if scheme == "grpc":
-            import tritonclient.grpc as client  # noqa
+        print(
+            f"Connecting to Triton server at {self.url} with endpoint {self.endpoint} using {scheme}..."
+        )
 
-            self.triton_client = client.InferenceServerClient(url=self.url, verbose=False, ssl=False)
-            config = self.triton_client.get_model_config(endpoint, as_json=True)["config"]
+        import tritonclient.http as client  # noqa
+
+        if scheme == "https":
+            ssl = True
+            ssl_context_factory = gevent.ssl.create_default_context
         else:
-            import tritonclient.http as client  # noqa
-            
-            if scheme == "https":
-                ssl = True
-                ssl_context_factory = gevent.ssl.create_default_context
-            else:
-                ssl = False
-                ssl_context_factory = None
+            ssl = False
+            ssl_context_factory = None
 
-            self.triton_client = client.InferenceServerClient(url=self.url, verbose=False, ssl=ssl, ssl_context_factory=ssl_context_factory)
-            config = self.triton_client.get_model_config(endpoint, headers=self.headers)
+        self.triton_client = client.InferenceServerClient(
+            url=self.url,
+            verbose=False,
+            ssl=ssl,
+            ssl_context_factory=ssl_context_factory,
+        )
+        config = self.triton_client.get_model_config(endpoint, headers=self.headers)
 
         # Sort output names alphabetically, i.e. 'output0', 'output1', etc.
         config["output"] = sorted(config["output"], key=lambda x: x.get("name"))
 
-        pprint(self.triton_client.get_inference_statistics(model_name=self.endpoint, headers=self.headers))
-        # pprint(self.triton_client.get_model_repository_index())
-        
+        pprint(
+            self.triton_client.get_inference_statistics(
+                model_name=self.endpoint, headers=self.headers
+            )
+        )
+
         # Define model attributes
-        type_map = {"TYPE_FP32": np.float32, "TYPE_FP16": np.float16, "TYPE_UINT8": np.uint8}
+        type_map = {
+            "TYPE_FP32": np.float32,
+            "TYPE_FP16": np.float16,
+            "TYPE_UINT8": np.uint8,
+        }
         self.InferRequestedOutput = client.InferRequestedOutput
         self.InferInput = client.InferInput
         self.input_formats = [x["data_type"] for x in config["input"]]
@@ -191,45 +232,67 @@ class TritonClientPredictor(BasePredictor):
         self.output_names = [x["name"] for x in config["output"]]
         self.output_formats = [x["data_type"] for x in config["output"]]
         self.np_output_formats = [type_map[x] for x in self.output_formats]
-        self.metadata = eval(config.get("parameters", {}).get("metadata", {}).get("string_value", "None"))
 
-    def request(self, *inputs: np.ndarray) -> tuple[np.ndarray, float]:
-        """
-        Call the model with the given inputs.
-
-        Args:
-            *inputs (List[np.ndarray]): Input data to the model.
-
-        Returns:
-            (List[np.ndarray]): Model outputs.
-        """
+    def request(
+        self,
+        input: np.ndarray,
+        confidence_threshold: float,
+        iou_threshold: float,
+    ) -> tuple[np.ndarray, float]:
         infer_inputs = []
-        for i, x in enumerate(inputs):
-            if x.dtype != self.np_input_formats[i]:
-                x = x.astype(self.np_input_formats[i])
-            infer_input = self.InferInput(self.input_names[i], [*x.shape], self.input_formats[i].replace("TYPE_", ""))
-            infer_input.set_data_from_numpy(x)
-            infer_inputs.append(infer_input)
 
-        infer_outputs = [self.InferRequestedOutput(output_name) for output_name in self.output_names]
-        
+        # Input image tensor (com dimensão de batch)
+        batch_size = (
+            input.shape[0] if len(input.shape) == 4 else 1
+        )  # Suporta inputs com e sem batch explícito
+        infer_input = self.InferInput("raw_image", input.shape, "UINT8")
+        infer_input.set_data_from_numpy(input.astype(np.uint8))
+        infer_inputs.append(infer_input)
+
+        # Confidence threshold tensor (com dimensão de batch)
+        infer_input = self.InferInput("confidence_threshold", [batch_size, 1], "FP16")
+        infer_input.set_data_from_numpy(
+            np.array([[confidence_threshold]] * batch_size, dtype=np.float16)
+        )
+        infer_inputs.append(infer_input)
+
+        # IOU threshold tensor (com dimensão de batch)
+        infer_input = self.InferInput("iou_threshold", [batch_size, 1], "FP16")
+        infer_input.set_data_from_numpy(
+            np.array([[iou_threshold]] * batch_size, dtype=np.float16)
+        )
+        infer_inputs.append(infer_input)
+
+        # Configurar saídas
+        infer_outputs = [
+            self.InferRequestedOutput(output_name) for output_name in self.output_names
+        ]
+
         tic = time.time()
-        outputs = self.triton_client.infer(model_name=self.endpoint, inputs=infer_inputs, outputs=infer_outputs, response_compression_algorithm='deflate', headers=self.headers)
+        outputs = self.triton_client.infer(
+            model_name=self.endpoint,
+            inputs=infer_inputs,
+            outputs=infer_outputs,
+            request_compression_algorithm="deflate",
+            response_compression_algorithm="deflate",
+        )
         latency = time.time() - tic
 
-        return outputs.as_numpy(self.output_names[0]).astype(self.np_output_formats[0]), latency
-    
+        return (
+            outputs.as_numpy(self.output_names[0]).astype(self.np_output_formats[0]),
+            latency,
+        )
+
     def format_response(self, response):
         """
         Format the response from the model.
             [-1, 5] -> [num_detections, 5]
-            
+
         Args:
             response (numpy.ndarray): The model response.
-            
+
         Returns:
             numpy.ndarray: The formatted response.
         """
         num_detections = response.shape[0]
         return response.reshape((num_detections, 5))
- 
