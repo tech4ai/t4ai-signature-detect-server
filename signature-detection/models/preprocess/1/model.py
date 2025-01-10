@@ -32,7 +32,7 @@ class TritonPythonModel:
             - model_name: Name of the model.
         """
         # Parse the model configuration from JSON
-        self.model_config = model_config = json.loads(args['model_config'])
+        self.model_config = model_config = json.loads(args["model_config"])
 
         # Retrieve the output configuration for "preprocessed_image"
         preprocessed_image_config = pb_utils.get_output_config_by_name(
@@ -41,7 +41,7 @@ class TritonPythonModel:
 
         # Convert Triton data types to NumPy data types
         self.preprocessed_image_dtype = pb_utils.triton_string_to_numpy(
-            preprocessed_image_config['data_type']
+            preprocessed_image_config["data_type"]
         )
 
     def execute(self, requests):
@@ -62,40 +62,36 @@ class TritonPythonModel:
             A list of `pb_utils.InferenceResponse` objects, one for each request.
         """
         responses = []
-        times = []
 
         for request in requests:
             # Retrieve the input tensor "raw_image"
             raw_image = pb_utils.get_input_tensor_by_name(request, "raw_image")
 
-            tic = time.time_ns()
-
             # Decode and preprocess the input image
             img = raw_image.as_numpy()
-            image = cv2.imdecode(np.frombuffer(img.tobytes(), np.uint8), cv2.IMREAD_COLOR)
+            image = cv2.imdecode(
+                np.frombuffer(img.tobytes(), np.uint8), cv2.IMREAD_COLOR
+            )
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # Convert to RGB
-            image = cv2.resize(image, (640, 640))          # Resize to 640x640
-            image = image.astype(np.float32) / 255.0       # Normalize pixel values to [0, 1]
-            image = np.transpose(image, (2, 0, 1))         # Rearrange dimensions [H, W, C] -> [C, H, W]
-            image = np.expand_dims(image, axis=0)          # Add batch dimension
-
-            times.append(time.time_ns() - tic)
+            image = cv2.resize(image, (640, 640))  # Resize to 640x640
+            image = image.astype(np.float32) / 255.0  # Normalize pixel values to [0, 1]
+            image = np.transpose(
+                image, (2, 0, 1)
+            )  # Rearrange dimensions [H, W, C] -> [C, H, W]
+            image = np.expand_dims(image, axis=0)  # Add batch dimension
 
             # Convert the preprocessed image to a Triton tensor
-            preprocessed_image_tensor = pb_utils.Tensor(
-                'preprocessed_image',
-                image.astype(self.preprocessed_image_dtype),
-            )
-
             # Create an inference response
             inference_response = pb_utils.InferenceResponse(
-                output_tensors=[preprocessed_image_tensor]
+                output_tensors=[
+                    pb_utils.Tensor(
+                        "preprocessed_image",
+                        image.astype(self.preprocessed_image_dtype),
+                    )
+                ]
             )
 
             responses.append(inference_response)
-
-        # Log the average preprocessing time
-        logging.info(f"Average [Pre-process] time: {np.mean(times)} ns")
 
         return responses
 
