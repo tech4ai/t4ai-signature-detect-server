@@ -1,8 +1,23 @@
 name: "yolov8s"
-backend: "onnxruntime"
+backend: "openvino"
 default_model_filename: "model.onnx"
 
-max_batch_size: 16
+max_batch_size: 1
+
+parameters: [
+{
+   key: "NUM_STREAMS"
+   value: {
+     string_value: "NUMA"
+   }
+},
+{
+   key: "PERFORMANCE_HINT"
+   value: {
+     string_value: "LATENCY"
+   }
+}
+]
 
 input {
   name: "images"
@@ -17,12 +32,12 @@ output {
 }
 
 instance_group {
-  count: 1
+  count: 8
   kind: KIND_CPU
 }
 
 dynamic_batching {
-  max_queue_delay_microseconds: 100
+  max_queue_delay_microseconds: 150
 }
 
 optimization { execution_accelerators {

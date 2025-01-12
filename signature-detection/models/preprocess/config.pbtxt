@@ -1,7 +1,8 @@
 name: "preprocess"
 backend: "python"
 
-max_batch_size: 16
+max_batch_size: 1
+
 input [
   {
     name: "raw_image"
@@ -19,7 +20,7 @@ output [
 ]
 
 dynamic_batching {
-  max_queue_delay_microseconds: 100
+  max_queue_delay_microseconds: 150
 }
 
 instance_group {
