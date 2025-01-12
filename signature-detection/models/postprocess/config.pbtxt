@@ -1,7 +1,8 @@
 name: "postprocess"
 backend: "python"
 
-max_batch_size: 16
+max_batch_size: 1
+
 input {
   name: "postprocess_input"
   data_type: TYPE_FP32
@@ -25,10 +26,10 @@ output {
 }
 
 dynamic_batching {
-  max_queue_delay_microseconds: 100
+  max_queue_delay_microseconds: 150
 }
 
 instance_group {
-  count: 2
+  count: 1
   kind: KIND_CPU
 }

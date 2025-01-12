@@ -74,7 +74,7 @@ class TritonPythonModel:
             )
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # Convert to RGB
             image = cv2.resize(image, (640, 640))  # Resize to 640x640
-            image = image.astype(np.float32) / 255.0  # Normalize pixel values to [0, 1]
+            image = image.astype(np.float16) / 255.0  # Normalize pixel values to [0, 1]
             image = np.transpose(
                 image, (2, 0, 1)
             )  # Rearrange dimensions [H, W, C] -> [C, H, W]
