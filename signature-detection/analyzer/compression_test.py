@@ -60,18 +60,37 @@ class ConcurrentTritonClientPredictor(TritonClientPredictor):
         super().__init__(url=url, endpoint=endpoint, scheme=scheme)
 
     def request_with_compression(
-        self, inputs: np.ndarray, compression_config: CompressionConfig
+        self,
+        input: np.ndarray,
+        confidence_threshold: float,
+        iou_threshold: float,
+        compression_config: CompressionConfig,
     ) -> Tuple[np.ndarray, float]:
         infer_inputs = []
-        x = inputs
-        if x.dtype != self.np_input_formats[0]:
-            x = x.astype(self.np_input_formats[0])
-        infer_input = self.InferInput(
-            self.input_names[0], [*x.shape], self.input_formats[0].replace("TYPE_", "")
-        )
-        infer_input.set_data_from_numpy(x)
+
+        # Input image tensor (com dimensão de batch)
+        batch_size = (
+            input.shape[0] if len(input.shape) == 4 else 1
+        )  # Suporta inputs com e sem batch explícito
+        infer_input = self.InferInput("raw_image", input.shape, "UINT8")
+        infer_input.set_data_from_numpy(input.astype(np.uint8))
         infer_inputs.append(infer_input)
 
+        # Confidence threshold tensor (com dimensão de batch)
+        infer_input = self.InferInput("confidence_threshold", [batch_size, 1], "FP16")
+        infer_input.set_data_from_numpy(
+            np.array([[confidence_threshold]] * batch_size, dtype=np.float16)
+        )
+        infer_inputs.append(infer_input)
+
+        # IOU threshold tensor (com dimensão de batch)
+        infer_input = self.InferInput("iou_threshold", [batch_size, 1], "FP16")
+        infer_input.set_data_from_numpy(
+            np.array([[iou_threshold]] * batch_size, dtype=np.float16)
+        )
+        infer_inputs.append(infer_input)
+
+        # Configurar saídas
         infer_outputs = [
             self.InferRequestedOutput(output_name) for output_name in self.output_names
         ]
@@ -131,7 +150,7 @@ class CompressionTestPipeline:
         config: CompressionConfig,
     ) -> Tuple[np.ndarray, float]:
         try:
-            return predictor.request_with_compression(image_data, config)
+            return predictor.request_with_compression(image_data, 0.2, 0.5, config)
         except Exception as e:
             self.logger.warning(f"Error in prediction: {str(e)}, retrying...")
             raise
@@ -240,7 +259,7 @@ def run_compression_tests(predictor_url: str, dataset_dir: str):
     train_paths = get_image_paths(dataset_dir, "train")
     test_paths = get_image_paths(dataset_dir, "test")
     val_paths = get_image_paths(dataset_dir, "valid")
-    all_paths = train_paths + test_paths + val_paths
+    all_paths = test_paths
 
     print(f"Running tests on {len(all_paths)} images...")
     results = pipeline.run_concurrent_tests(all_paths)
@@ -266,6 +285,32 @@ if __name__ == "__main__":
         exit(1)
 
     # http://localhost:8000/yolov8_ensemble  https://t4ai-signature-detector-100881400340.us-central1.run.app/yolov8_ensemble
-    predictor_url = "https://t4ai-signature-detector-100881400340.us-central1.run.app/yolov8_ensemble"  # Replace with your Triton server URL
+    predictor_url = (
+        "http://localhost:8000/yolov8_ensemble"  # Replace with your Triton server URL
+    )
 
     run_compression_tests(predictor_url, DATASET_DIR)
+
+
+"""
+Configuration: Request: NONE, Response: DEFLATE
+Mean Latency: 0.4110 s
+Std Latency:  0.0309 s
+Min Latency:  0.2094 s
+Max Latency:  0.6809 s
+Images Processed: 419
+
+Configuration: Request: DEFLATE, Response: DEFLATE
+Mean Latency: 0.4113 s
+Std Latency:  0.0310 s
+Min Latency:  0.3624 s
+Max Latency:  0.6880 s
+Images Processed: 419
+
+Configuration: Request: DEFLATE, Response: NONE
+Mean Latency: 0.4119 s
+Std Latency:  0.0310 s
+Min Latency:  0.3712 s
+Max Latency:  0.6305 s
+Images Processed: 419
+"""
