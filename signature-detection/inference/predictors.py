@@ -178,7 +178,7 @@ class TritonClientPredictor(BasePredictor):
             endpoint (str): The name of the model on the Triton server.
             scheme (str): The communication scheme ('http' or 'grpc').
         """
-        if not endpoint and not scheme:  # Parse all args from URL string
+        if not endpoint and not scheme:
             splits = urlsplit(url)
             endpoint = splits.path.strip("/").split("/")[0]
             scheme = splits.scheme
@@ -186,28 +186,44 @@ class TritonClientPredictor(BasePredictor):
 
         self.endpoint = endpoint
         self.url = url
-        self.headers = {"admin-key": os.getenv("TRITON_ADMIN_KEY", "")}
+        self.scheme = scheme
 
         print(
             f"Connecting to Triton server at {self.url} with endpoint {self.endpoint} using {scheme}..."
         )
 
-        import tritonclient.http as client  # noqa
+        if scheme[:4] == "http":
+            import tritonclient.http as client
 
-        if scheme == "https":
-            ssl = True
-            ssl_context_factory = gevent.ssl.create_default_context
-        else:
             ssl = False
             ssl_context_factory = None
+            if scheme == "https":
+                ssl = True
+                ssl_context_factory = None
 
-        self.triton_client = client.InferenceServerClient(
-            url=self.url,
-            verbose=False,
-            ssl=ssl,
-            ssl_context_factory=ssl_context_factory,
-        )
-        config = self.triton_client.get_model_config(endpoint, headers=self.headers)
+            self.triton_client = client.InferenceServerClient(
+                url=self.url,
+                verbose=False,
+                ssl=ssl,
+                ssl_context_factory=ssl_context_factory,
+            )
+
+            self.headers = {"admin-key": os.getenv("TRITON_ADMIN_KEY", "")}
+            config = self.triton_client.get_model_config(endpoint, headers=self.headers)
+        else:
+            import tritonclient.grpc as client
+
+            self.triton_client = client.InferenceServerClient(
+                url=self.url,
+                verbose=False,
+            )
+
+            self.headers = {
+                "triton-grpc-protocol-admin-key": os.getenv("TRITON_ADMIN_KEY", "")
+            }
+            config = self.triton_client.get_model_config(
+                endpoint, headers=self.headers, as_json=True
+            )["config"]
 
         # Sort output names alphabetically, i.e. 'output0', 'output1', etc.
         config["output"] = sorted(config["output"], key=lambda x: x.get("name"))
@@ -268,13 +284,21 @@ class TritonClientPredictor(BasePredictor):
             self.InferRequestedOutput(output_name) for output_name in self.output_names
         ]
 
+        infer_args = {
+            "model_name": self.endpoint,
+            "inputs": infer_inputs,
+            "outputs": infer_outputs,
+        }
+
+        if self.scheme[:4] == "http":
+            infer_args["request_compression_algorithm"] = "deflate"
+            infer_args["response_compression_algorithm"] = "deflate"
+        else:
+            infer_args["compression_algorithm"] = "deflate"
+
         tic = time.time()
         outputs = self.triton_client.infer(
-            model_name=self.endpoint,
-            inputs=infer_inputs,
-            outputs=infer_outputs,
-            request_compression_algorithm="deflate",
-            response_compression_algorithm="deflate",
+            **infer_args,
         )
         latency = time.time() - tic
 
