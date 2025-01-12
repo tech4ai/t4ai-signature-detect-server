@@ -1,4 +1,6 @@
 import os
+import cv2
+from PIL import Image, ImageDraw
 from dotenv import load_dotenv
 
 import numpy as np
@@ -36,6 +38,56 @@ class InferencePipeline:
             "detection_boxes": response[:, :4],
             "detection_scores": response[:, 4],
         }
+
+    def draw_result(self, image_path, result):
+        """
+        Desenha as bounding boxes na imagem.
+
+        Args:
+            image_path (str): Caminho da imagem original.
+            result (dict): Dicionário contendo `detection_boxes` e `detection_scores`.
+
+        Returns:
+            np.ndarray: Imagem com as bounding boxes desenhadas (formato OpenCV).
+        """
+        # Carregar a imagem
+        image = Image.open(image_path)
+        draw = ImageDraw.Draw(image)
+
+        # Obter dimensões originais
+        img_width, img_height = image.size
+
+        # Desenhar as bounding boxes
+        boxes = result["detection_boxes"]
+        scores = result["detection_scores"]
+
+        for box, score in zip(boxes, scores):
+            if score >= 0.2:  # Filtrar por confiança mínima
+                x1, y1, w, h = box
+                x2 = x1 + w
+                y2 = y1 + h
+
+                # Reescalar para o tamanho original da imagem
+                x1 = int(x1 * img_width / 640)
+                y1 = int(y1 * img_height / 640)
+                x2 = int(x2 * img_width / 640)
+                y2 = int(y2 * img_height / 640)
+
+                color = (
+                    np.random.randint(0, 255),
+                    np.random.randint(0, 255),
+                    np.random.randint(0, 255),
+                )
+
+                # Desenhar bounding box
+                draw.rectangle([x1, y1, x2, y2], outline=color, width=3)
+
+                # Adicionar label com score
+                label = f"{score:.2f}"
+                draw.text((x1, y1 - 10), label, fill=color)
+
+        # Converter a imagem PIL para formato OpenCV
+        return cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
 
 
 def get_image_paths(dataset_dir, split="test"):
@@ -90,6 +142,9 @@ def run_pipeline(pipeline: InferencePipeline, image_paths):
     print("Executando inferência em todas as imagens...")
     inference_times = []
 
+    window_name = "Resultados de Inferência"
+    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+
     # Criando barra de progresso
     progress_bar = tqdm(
         image_paths,
@@ -103,10 +158,21 @@ def run_pipeline(pipeline: InferencePipeline, image_paths):
     for image_path in progress_bar:
         result = pipeline.run(image_path)
         current_time = result["inference_time"]
-        # Atualiza a descrição da barra com o tempo de inferência atual
-        progress_bar.set_description(f"Tempo atual: {current_time:.3f}s")
         inference_times.append(current_time)
 
+        # Atualiza a descrição da barra com o tempo de inferência atual
+        progress_bar.set_description(f"Tempo atual: {current_time:.3f}s")
+
+        annotated_image = pipeline.draw_result(image_path, result["result"])
+        cv2.imshow(window_name, annotated_image)
+
+        # Esperar por 1ms para permitir a interação
+        if cv2.waitKey(1) & 0xFF == ord("q"):
+            print("Interrompido pelo usuário.")
+            break
+
+    # Fechar janela ao final
+    cv2.destroyAllWindows()
     print(f"\nTempo médio de inferência: {np.mean(inference_times):.3f} s")
 
 
@@ -124,7 +190,7 @@ def main():
     train_image_paths = get_image_paths(DATASET_DIR, "train")
     test_image_paths = get_image_paths(DATASET_DIR, "test")
     val_image_paths = get_image_paths(DATASET_DIR, "valid")
-    image_paths = train_image_paths + test_image_paths + val_image_paths
+    image_paths = test_image_paths + train_image_paths + val_image_paths
 
     # Predictor selection
     predictor_class, url = select_predictor()
