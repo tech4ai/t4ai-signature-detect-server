@@ -12,8 +12,10 @@ from inference.predictors import TritonClientPredictor
 
 
 class MetricsStorage:
-    def __init__(self, db_path="db/metrics.db"):
-        self.db_path = os.path.join(os.getcwd(), "gui", db_path)
+    def __init__(self, db_path="metrics.db"):
+        self.db_path = os.path.join(
+            os.getcwd(), "signature-detection", "gui", "db", db_path
+        )
         self.setup_database()
 
     def setup_database(self):
@@ -75,7 +77,9 @@ class SignatureDetector(InferencePipeline):
     def __init__(self, predictor):
         super().__init__(predictor)
 
-        self.temp_path = os.path.join(os.getcwd(), "gui", "temp", "temp.jpg")
+        self.temp_path = os.path.join(
+            os.getcwd(), "signature-detection", "gui", "tmp", "temp.jpg"
+        )
         self.metrics_storage = MetricsStorage()
 
     def update_metrics(self, inference_time):
@@ -186,55 +190,6 @@ class SignatureDetector(InferencePipeline):
 
         return hist_fig, line_fig
 
-    def draw_result(self, image_path, result):
-        """
-        Desenha as bounding boxes na imagem.
-
-        Args:
-            image_path (str): Caminho da imagem original.
-            result (dict): Dicionário contendo `detection_boxes` e `detection_scores`.
-
-        Returns:
-            PIL.Image: Imagem com as bounding boxes desenhadas.
-        """
-        # Carregar a imagem
-        image = Image.open(image_path)
-        draw = ImageDraw.Draw(image)
-
-        # Obter dimensões originais
-        img_width, img_height = image.size
-
-        # Desenhar as bounding boxes
-        boxes = result["detection_boxes"]
-        scores = result["detection_scores"]
-
-        for box, score in zip(boxes, scores):
-            if score >= 0.2:  # Filtrar por confiança mínima
-                x1, y1, w, h = box
-                x2 = x1 + w
-                y2 = y1 + h
-
-                # Reescalar para o tamanho original da imagem
-                x1 = int(x1 * img_width / 640)
-                y1 = int(y1 * img_height / 640)
-                x2 = int(x2 * img_width / 640)
-                y2 = int(y2 * img_height / 640)
-
-                color = (
-                    random.randint(0, 255),
-                    random.randint(0, 255),
-                    random.randint(0, 255),
-                )
-
-                # Desenhar bounding box
-                draw.rectangle([x1, y1, x2, y2], outline=color, width=3)
-
-                # Adicionar label com score
-                label = f"{score:.2f}"
-                draw.text((x1, y1 - 10), label, fill=color)
-
-        return image
-
     def detect(self, image, conf_thres=0.25, iou_thres=0.5):
         # Salvar imagem temporariamente
         image.save(self.temp_path)
@@ -243,7 +198,7 @@ class SignatureDetector(InferencePipeline):
 
         output_image = self.draw_result(self.temp_path, response["result"])
 
-        self.update_metrics(response["inference_time"])
+        self.update_metrics(response["inference_time"] * 1000)
 
         return output_image, self.get_metrics()
 
@@ -255,7 +210,7 @@ class SignatureDetector(InferencePipeline):
 
 def create_gradio_interface():
     # Seleção do servidor Triton e configuração inicial
-    TRITON_SERVER_URL = "REDACTED_TRITON_URL"
+    TRITON_SERVER_URL = "grpc://localhost:8001/yolov8_ensemble"
     predictor = TritonClientPredictor(url=TRITON_SERVER_URL)
     detector = SignatureDetector(predictor)
 
@@ -288,7 +243,7 @@ def create_gradio_interface():
         margin-bottom: 1rem !important;
     }
     """
-    example_dir = os.path.join(os.getcwd(), "gui", "examples")
+    example_dir = os.path.join(os.getcwd(), "signature-detection", "gui", "examples")
 
     def process_image(image, conf_thres, iou_thres):
         if image is None:
@@ -323,6 +278,23 @@ def create_gradio_interface():
             line_fig,
         )
 
+    def process_folder(files_path, conf_thres, iou_thres):
+        if not files_path:
+            return None, None, None, None
+
+        valid_extensions = [".jpg", ".jpeg", ".png"]
+        image_files = [
+            f for f in files_path if os.path.splitext(f.lower())[1] in valid_extensions
+        ]
+
+        if not image_files:
+            return None, None, None, None
+
+        for img_file in image_files:
+            image = Image.open(img_file)
+
+            yield process_image(image, conf_thres, iou_thres)
+
     with gr.Blocks(
         theme=gr.themes.Soft(
             primary_hue="indigo", secondary_hue="gray", neutral_hue="gray"
@@ -345,13 +317,29 @@ def create_gradio_interface():
         with gr.Row(equal_height=True, elem_classes="main-container"):
             # Coluna da esquerda para controles e informações
             with gr.Column(scale=1):
-                input_image = gr.Image(
-                    label="Faça o upload do seu documento", type="pil"
-                )
+                with gr.Tab("Imagem Única"):
+                    input_image = gr.Image(
+                        label="Faça o upload do seu documento", type="pil"
+                    )
+                    with gr.Row():
+                        clear_single_btn = gr.ClearButton([input_image], value="Limpar")
+                        detect_single_btn = gr.Button(
+                            "Detectar", elem_classes="custom-button"
+                        )
 
-                with gr.Row():
-                    clear_btn = gr.ClearButton([input_image], value="Limpar")
-                    submit_btn = gr.Button("Detectar", elem_classes="custom-button")
+                with gr.Tab("Pasta de Imagens"):
+                    input_folder = gr.File(
+                        label="Faça o upload de uma pasta com imagens",
+                        file_count="directory",
+                        type="filepath",
+                    )
+                    with gr.Row():
+                        clear_folder_btn = gr.ClearButton(
+                            [input_folder], value="Limpar"
+                        )
+                        detect_folder_btn = gr.Button(
+                            "Detectar", elem_classes="custom-button"
+                        )
 
                 with gr.Group():
                     confidence_threshold = gr.Slider(
@@ -426,11 +414,18 @@ def create_gradio_interface():
                 """
             )
 
-        clear_btn.add([output_image])
+        clear_single_btn.add([output_image])
+        clear_folder_btn.add([output_image])
 
-        submit_btn.click(
+        detect_single_btn.click(
             fn=process_image,
             inputs=[input_image, confidence_threshold, iou_threshold],
+            outputs=[output_image, total_inferences, hist_plot, line_plot],
+        )
+
+        detect_folder_btn.click(
+            fn=process_folder,
+            inputs=[input_folder, confidence_threshold, iou_threshold],
             outputs=[output_image, total_inferences, hist_plot, line_plot],
         )
 
