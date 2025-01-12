@@ -120,7 +120,7 @@ RUN chown triton-server:triton-server /opt/tritonserver/backends
 
 COPY --chown=1000:1000 --from=full /usr/bin/serve /usr/bin/.
 
-EXPOSE 8000 
+EXPOSE 8000 8001
 
 # Server initialization script
 COPY entrypoint.sh /entrypoint.sh
