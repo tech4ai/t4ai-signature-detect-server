@@ -2,9 +2,10 @@ services:
   triton_server:
     image: triton-signature-server:latest
     build:
-      context: . 
+      context: .
       dockerfile: Dockerfile.dev
     ports:
       - "8000:8000"
+      - "8001:8001"
     env_file:
       - .env

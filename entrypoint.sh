@@ -13,5 +13,6 @@ exec tritonserver \
   --load-model=* \
   --log-verbose=1 \
   --allow-metrics=false \
-  --allow-grpc=false \
+  --allow-grpc=true \
+  --grpc-restricted-protocol=model-repository,model-config,shared-memory,statistics,trace:admin-key=${TRITON_ADMIN_KEY} \
   --http-restricted-api=model-repository,model-config,shared-memory,statistics,trace:admin-key=${TRITON_ADMIN_KEY}
