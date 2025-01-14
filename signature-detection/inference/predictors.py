@@ -214,8 +214,7 @@ class TritonClientPredictor(BasePredictor):
             import tritonclient.grpc as client
 
             self.triton_client = client.InferenceServerClient(
-                url=self.url,
-                verbose=False,
+                url=self.url, verbose=False, ssl=True
             )
 
             self.headers = {
