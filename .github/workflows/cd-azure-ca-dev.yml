@@ -1,0 +1,33 @@
+name: "[DEV] Deploy to Azure Container App"
+
+run-name: "[DEV] Deploy by ${{ github.actor }}"
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - develop
+      - feature/azure-ci-cd
+  workflow_dispatch:
+
+jobs:
+  call-deploy:
+    uses: tech4ai/devops-reusable-workflows/.github/workflows/cd-docker-azure.yaml@develop
+    with:
+      container-app-name: t4ai-triton-capp-develop
+      resource-group: t4ai-inference-gateway-rg-develop
+      environment: Development
+      registry-url: ${{ vars.REGISTRY_USERNAME_DEVELOP }}.azurecr.io
+    secrets:
+      REGISTRY_USERNAME: ${{ vars.REGISTRY_USERNAME_DEVELOP }}
+      REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD_DEVELOP }}
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID_DEVELOP }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID_DEVELOP }}
