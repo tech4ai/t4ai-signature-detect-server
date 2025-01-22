@@ -259,7 +259,7 @@ def run_compression_tests(predictor_url: str, dataset_dir: str):
     train_paths = get_image_paths(dataset_dir, "train")
     test_paths = get_image_paths(dataset_dir, "test")
     val_paths = get_image_paths(dataset_dir, "valid")
-    all_paths = test_paths
+    all_paths = train_paths + test_paths + val_paths
 
     print(f"Running tests on {len(all_paths)} images...")
     results = pipeline.run_concurrent_tests(all_paths)
@@ -284,33 +284,9 @@ if __name__ == "__main__":
         print("Check the data folder and scripts for download the dataset")
         exit(1)
 
-    # http://localhost:8000/yolov8_ensemble  https://t4ai-signature-detector-100881400340.us-central1.run.app/yolov8_ensemble
     predictor_url = (
         "http://localhost:8000/yolov8_ensemble"  # Replace with your Triton server URL
     )
 
     run_compression_tests(predictor_url, DATASET_DIR)
 
-
-"""
-Configuration: Request: NONE, Response: DEFLATE
-Mean Latency: 0.4110 s
-Std Latency:  0.0309 s
-Min Latency:  0.2094 s
-Max Latency:  0.6809 s
-Images Processed: 419
-
-Configuration: Request: DEFLATE, Response: DEFLATE
-Mean Latency: 0.4113 s
-Std Latency:  0.0310 s
-Min Latency:  0.3624 s
-Max Latency:  0.6880 s
-Images Processed: 419
-
-Configuration: Request: DEFLATE, Response: NONE
-Mean Latency: 0.4119 s
-Std Latency:  0.0310 s
-Min Latency:  0.3712 s
-Max Latency:  0.6305 s
-Images Processed: 419
-"""
