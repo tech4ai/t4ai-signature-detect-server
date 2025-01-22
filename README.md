@@ -3,19 +3,19 @@
 <table>
   <tr>
     <td>
-      <a href="#"><img src="https://img.shields.io/badge/Triton-Inference%20Server-76B900?style=for-the-badge&labelColor=black&logo=nvidia" alt="Triton Badge" /></a>
+      <a href="https://github.com/triton-inference-server/server"><img src="https://img.shields.io/badge/Triton-Inference%20Server-76B900?style=for-the-badge&labelColor=black&logo=nvidia" alt="Triton Badge" /></a>
     </td>
     <td>
-      <a href="#"><img src="https://img.shields.io/badge/-Docker-2496ED?style=for-the-badge&labelColor=black&logo=docker&logoColor=2496ED" alt="Docker Badge" /></a>
+      <a href="https://www.docker.com/"><img src="https://img.shields.io/badge/-Docker-2496ED?style=for-the-badge&labelColor=black&logo=docker&logoColor=2496ED" alt="Docker Badge" /></a>
     </td>
     <td>
-      <a href="#"><img src="https://img.shields.io/badge/-Python-3776AB?style=for-the-badge&labelColor=black&logo=python&logoColor=3776AB" alt="Python Badge" /></a>
+      <a href="https://www.python.org/"><img src="https://img.shields.io/badge/-Python-3776AB?style=for-the-badge&labelColor=black&logo=python&logoColor=3776AB" alt="Python Badge" /></a>
     </td>
     <td>
-      <a href="#"><img src="https://img.shields.io/badge/Apache-2.0-D22128?style=for-the-badge&labelColor=black&logo=apache" alt="Apache Badge" /></a>
+      <a href="https://www.apache.org/licenses/LICENSE-2.0.html"><img src="https://img.shields.io/badge/Apache-2.0-D22128?style=for-the-badge&labelColor=black&logo=apache" alt="Apache Badge" /></a>
     </td>
     <td>
-      <a href="#"><img src="https://img.shields.io/badge/-Opencv-5C3EE8?style=for-the-badge&labelColor=black&logo=opencv&logoColor=5C3EE8" alt="Opencv Badge" /></a>
+      <a href="https://opencv.org/"><img src="https://img.shields.io/badge/-Opencv-5C3EE8?style=for-the-badge&labelColor=black&logo=opencv&logoColor=5C3EE8" alt="Opencv Badge" /></a>
     </td>
   </tr>
 </table>
@@ -26,12 +26,12 @@ This project provides a  pipeline for deploying and performing inference with a 
 
 - [Project Structure](#-project-structure)
 - [Features](#%EF%B8%8F-features)
-- [Dependencies](#-dependencies)
 - [Installation](#installation)
 - [Ensemble Model](#ensemble-model)
 - [Inference](#inference)
 - [Limit Endpoint Access](#limit-endpoint-access)
 - [Model Analyzer](#-model-analyzer)
+- [Model & Dataset Resources](#-model--dataset-resources)
 - [Notes](#-notes)
 - [License](#-license)
 
@@ -52,7 +52,7 @@ This project provides a  pipeline for deploying and performing inference with a 
   - **[`gui/`](./signature-detection/gui/)**: Contains the Gradio interface for interacting with the deployed model. The [`inference_gui.py`](./signature-detection/gui/inference_gui.py) script can be used to test the model in real time. The UI has built-in examples and plots of results and performance.
    - **[`models/`](./signature-detection/models/)**: Contains the Model Repository for Triton Server, including the YOLOv8 model and pre/post-processing scripts in a Ensemble Model.
    - **[`data/`](./signature-detection/data/)**: Contains the datasets and data processing scripts.
-   - **[`utils`](./signature-detection/utils/)**: Scripts for uploading/download the model to/from Google Cloud Storage and exporting the model to ONNX/TensorRT format.
+   - **[`utils/`](./signature-detection/utils/)**: Scripts for uploading/download the model to/from Google Cloud Storage or Azure Stoage and exporting the model to ONNX/TensorRT format.
 - **[`Dockerfile`](Dockerfile)**: Contains the configuration for building the Docker image for Triton Inference Server. 
   - **[`Dockerfile.dev`](Dockerfile.dev)**: Contains the configuration for building the Docker image for local development.
   - **[`docker-compose.yml`](docker-compose.yml)**: Contains the configuration for running Dockerfile.dev.
@@ -67,18 +67,6 @@ This project provides a  pipeline for deploying and performing inference with a 
 - **Optimized Performance**: Utilizes Triton's features like dynamic batching, OpenVINO backend and Ensemble Model for efficient inference.
 - **GUI for Easy Inference**: Provides an intuitive Gradio interface for interacting with the deployed model.
 - **Automated Scripts**: Includes scripts for model uploading, server startup, and resource cleanup.
-
-## 📦 Dependencies
-
-To get started, ensure you have the following installed:
-
-- **Docker**: For building the Docker image for Triton Inference Server.
-- **Python Packages**: Installable via:
-  ```bash
-  pip install -r requirements.txt
-  ```
-- **Google Cloud SDK**: Required for interacting with Google Cloud Storage and (Optional) Vertex AI.
-- **Prometheus** (Optional): For monitoring the performance of the Triton Inference Server.
 
 ## 💻 Installation 
 
@@ -268,13 +256,89 @@ model-analyzer report --report-model-configs yolov8s_config_0,yolov8s_config_12,
 
 You can modify the [`perf.yaml`](signature-detection/analyzer/config/perf.yaml) file to experiment with different configurations and analyze the performance of the model in your deployment environment. See the [Triton Model Analyzer documentation](https://github.com/triton-inference-server/model_analyzer) for more details.
 
-## 📝 Notes
+## 🤗 Model & Dataset Resources
 
-- The repository includes various scripts for automation, such as [`upload_models_to_gcs.py`](./signature-detection/utils/upload_models_to_gcs.py), [`download_from_gcs.py`](./signature-detection/utils/download_from_gcs.py),[`export_model.py`](./signature-detection/utils/export_model.py), and deployment scripts.
-- Performance tuning can be done using the `perf.yaml` file and related scripts to analyze and optimize the model's performance.
-- Contributions are welcome! Feel free to open issues and pull requests.
+This project uses a custom-trained YOLOv8 model for signature detection. All model weights, training artifacts, and the dataset are hosted on Hugging Face to comply with Ultralytics' YOLO licensing requirements and to ensure proper versioning and documentation.
+
+- **Model Repository**: Contains the trained model weights, ONNX exports, and comprehensive model card detailing the training process, performance metrics, and usage guidelines.
+
+  [![Model Card](https://huggingface.co/datasets/huggingface/badges/resolve/main/model-on-hf-md.svg)](https://huggingface.co/tech4humans/yolov8s-signature-detector)
+
+- **Dataset Repository**: Includes the training dataset, validation splits, and detailed documentation about data collection and preprocessing steps.
+
+  [![Dataset Card](https://huggingface.co/datasets/huggingface/badges/resolve/main/dataset-on-hf-md.svg)](https://huggingface.co/datasets/tech4humans/signature-detection)
+
+## Utils Section
+
+The [`utils/`](./signature-detection/utils/) folder contains scripts designed to simplify interactions with cloud storage providers and the process of exporting machine learning models. Below is an overview of the available scripts and their usage examples.
+
+#### 1. **Downloading Models from Cloud Storage**
+
+The [`download_from_cloud.py`](./signature-detection/utils/download_from_cloud.py) script allows you to download models or other files from Google Cloud Storage (GCP) or Azure Blob Storage. Use the appropriate arguments to specify the provider, storage credentials, and paths.
+
+- **Google Cloud Storage (GCP):**
+  ```bash
+  python signature-detection/utils/download_from_cloud.py --provider gcp --bucket-name <your-bucket-name>
+  ```
+
+- **Azure Blob Storage:**
+  ```bash
+  python signature-detection/utils/download_from_cloud.py --provider az --container-name <your-container-name> --connection-string "<your-connection-string>"
+  ```
+
+**Arguments:**
+- `--provider`: Specify the cloud provider (`gcp` or `az`).
+- `--bucket-name`: GCP bucket name (required for `gcp`).
+- `--container-name`: Azure container name (required for `az`).
+- `--connection-string`: Azure connection string (required for `az`).
+- `--local-folder`: Local folder to save downloaded files (default: `models` folder).
+- `--remote-folder`: Remote folder path in the cloud (default: `triton-server/image/signature-detection/models`).
+
+
+#### 2. **Uploading Models to Cloud Storage**
+
+The [`upload_models_to_cloud.py`](./signature-detection/utils/upload_models_to_cloud.py) script allows you to upload models or files from a local directory to either GCP or Azure storage. 
+
+- **Google Cloud Storage (GCP):**
+  ```bash
+  python signature-detection/utils/upload_models_to_cloud.py --provider gcp --bucket-name REDACTED_BUCKET_NAME
+  ```
+
+- **Azure Blob Storage:**
+  ```bash
+  python signature-detection/utils/upload_models_to_cloud.py --provider az --container-name REDACTED_CONTAINER_NAME --connection-string "<your-connection-string>"
+  ```
+
+**Arguments:**
+- `--provider`: Specify the cloud provider (`gcp` or `az`).
+- `--bucket-name`: GCP bucket name (required for `gcp`).
+- `--container-name`: Azure container name (required for `az`).
+- `--connection-string`: Azure connection string (required for `az`).
+- `--local-folder`: Local folder containing files to upload (default: `models` folder).
+- `--remote-folder`: Remote folder path in the cloud (default: `triton-server/image/signature-detection/models`).
+
+#### 3. **Exporting Models**
+
+The [`export_model.py`](./signature-detection/utils/export_model.py) script simplifies the process of exporting YOLOv8 models to either ONNX or TensorRT formats. This is useful for deploying models in environments requiring specific formats.
+
+- **Export to ONNX:**
+  ```bash
+  python signature-detection/utils/export_model.py --model-path /path/to/yolov8s.pt --output-path model.onnx --format onnx
+  ```
+
+- **Export to TensorRT:**
+  ```bash
+  python signature-detection/utils/export_model.py --model-path /path/to yolov8s.pt --output-path model.engine --format tensorrt
+  ```
+
+**Arguments:**
+- `--model-path`: Path to the input model file (e.g., YOLOv8 `.pt` file).
+- `--output-path`: Path to save the exported model.
+- `--format`: Export format (`onnx` or `tensorrt`).
+
+
 
 ## 📄 License
 
-This project is licensed under the Apache License 2.0. See `LICENSE` for more details.
+This project is licensed under the Apache License 2.0. See [`LICENSE`](LICENSE) for more details.
 
