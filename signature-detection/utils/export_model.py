@@ -1,73 +1,76 @@
 import argparse
 import os
-
-from google.cloud import storage
 from ultralytics import YOLO
 
 
-def init_gcp():
-    return storage.Client()
+def export_to_onnx(model_path: str, output_path: str):
+    """Exports a YOLO model to ONNX format.
 
-def download_from_gcp(storage_client, bucket_name, source_blob_name, local_path):
-    bucket = storage_client.bucket(bucket_name)
-    blob = bucket.blob(source_blob_name)
-    print(f"Downloading {source_blob_name} to {local_path}")
-    blob.download_to_filename(local_path)
-
-def upload_to_gcp(storage_client, bucket_name, destination_blob_name, local_path):
-    bucket = storage_client.bucket(bucket_name)
-    blob = bucket.blob(destination_blob_name)
-    print(f"Uploading {local_path} to {destination_blob_name}")
-    blob.upload_from_filename(local_path)
-
-def export_to_onnx(model_path, output_path):
+    Args:
+        model_path (str): Path to the YOLO model.
+        output_path (str): Path where the ONNX model will be saved.
+    """
     model = YOLO(model_path)
     print(f"Exporting model to ONNX: {output_path}")
     model.export(format="onnx", dynamic=True)
 
-def export_to_tensorrt(model_path, output_path):
+
+def export_to_tensorrt(model_path: str, output_path: str):
+    """Exports a YOLO model to TensorRT format.
+
+    Args:
+        model_path (str): Path to the YOLO model.
+        output_path (str): Path where the TensorRT model will be saved.
+    """
     model = YOLO(model_path)
     print(f"Exporting model to TensorRT: {output_path}")
     model.export(format="engine", dynamic=True)
 
+
 def main():
-    parser = argparse.ArgumentParser(description='Export YOLOv8 model to ONNX or TensorRT')
-    parser.add_argument('--format', choices=['onnx', 'tensorrt'], required=True,
-                      help='Export format (onnx or tensorrt)')
+    """Main function to handle model exportation based on user input."""
+    parser = argparse.ArgumentParser(
+        description="Export YOLOv8 model to ONNX or TensorRT"
+    )
+    parser.add_argument(
+        "--model-path",
+        type=str,
+        required=True,
+        help="Path to the YOLO model file (.pt)",
+    )
+    parser.add_argument(
+        "--output-path",
+        type=str,
+        default=os.path.abspath(
+            os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "..",
+                "models",
+                "yolov8s",
+                "1",
+                "model.onnx",
+            )
+        ),
+        help="Path where the exported model will be saved",
+    )
+    parser.add_argument(
+        "--format",
+        choices=["onnx", "tensorrt"],
+        required=True,
+        help="Export format (onnx or tensorrt)",
+    )
+
     args = parser.parse_args()
 
-    # GCP configurations
-    bucket_name = 'iag-training'
-    base_path = 'models/image/signature-detection/yolov8/yolov8s/train/weights'
-    source_blob_name = f'{base_path}/best.pt'
-    
-    # Set local and destination paths based on format
-    local_pt_path = '/tmp/model.pt'
-    local_export_path = '/tmp/model.onnx' if args.format == 'onnx' else '/tmp/model.engine'
-    destination_blob_name = f'{base_path}/model.{"onnx" if args.format == "onnx" else "engine"}'
-
+    # Export model based on the chosen format
     try:
-        # Initialize GCP client
-        storage_client = init_gcp()
-
-        # Download model
-        download_from_gcp(storage_client, bucket_name, source_blob_name, local_pt_path)
-
-        # Export model
-        if args.format == 'onnx':
-            export_to_onnx(local_pt_path, local_export_path)
+        if args.format == "onnx":
+            export_to_onnx(args.model_path, args.output_path)
         else:
-            export_to_tensorrt(local_pt_path, local_export_path)
+            export_to_tensorrt(args.model_path, args.output_path)
+    except Exception as e:
+        print(f"An error occurred during model export: {e}")
 
-        # Upload exported model
-        upload_to_gcp(storage_client, bucket_name, destination_blob_name, local_export_path)
-
-    finally:
-        # Clean up local files
-        if os.path.exists(local_pt_path):
-            os.remove(local_pt_path)
-        if os.path.exists(local_export_path):
-            os.remove(local_export_path)
 
 if __name__ == "__main__":
     main()
