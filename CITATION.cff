@@ -1,0 +1,32 @@
+# This CITATION.cff file was generated with https://bit.ly/cffinit.
+
+cff-version: 1.2.0
+title: Object Detection with Triton Inference Server
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - name: Tech4Humans
+    address: 'Rua Sergipe, 475 Conj. 501 São Paulo'
+    city: São Paulo
+    country: BR
+    website: 'https://www.tech4.ai/'
+    email: iag@tech4h.com.br
+repository-code: 'https://github.com/tech4ai/t4ai-signature-detect-server'
+repository: >-
+  https://huggingface.co/collections/tech4humans/deteccao-de-assinaturas-678b087d8b0ce22ae8c3f60e
+abstract: >-
+  This project provides a pipeline for deploying and
+  performing inference with a YOLOv8 object detection model
+  using Triton Inference Server on Google Cloud's Vertex AI,
+  locally or Docker based systems. The repository includes
+  scripts for automating the deployment process, a graphical
+  user interface for inference, and performance analysis
+  tools for optimizing the model's performance.
+keywords:
+  - Object Detection
+  - Triton Inference Server
+  - Yolov8
+  - Artificial Intelligence
+license: Apache-2.0
