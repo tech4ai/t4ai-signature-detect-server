@@ -43,6 +43,18 @@
         "security",
         "tool"
       ]
+    },
+    {
+      "login": "ronaldobalzi-tech4h",
+      "name": "ronaldobalzi-tech4h",
+      "avatar_url": "https://avatars.githubusercontent.com/u/136820259?v=4",
+      "profile": "https://github.com/ronaldobalzi-tech4h",
+      "contributions": [
+        "infra",
+        "review",
+        "security",
+        "tool"
+      ]
     }
   ],
   "contributorsPerLine": 7,
