@@ -12,11 +12,13 @@ input {
   name: "confidence_threshold"
   data_type: TYPE_FP16
   dims: [1]
+  optional: true
 }
 input {
   name: "iou_threshold"
   data_type: TYPE_FP16
   dims: [1]
+  optional: true
 }
 
 output {
