@@ -1,0 +1,122 @@
+name: 🐛 Bug Report
+description: Problems with t4ai-signature-detect-server
+labels: [bug, triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for submitting a bug report for t4ai-signature-detect-server! We appreciate your help in making the project better.
+
+  - type: checkboxes
+    attributes:
+      label: Search before asking
+      description: >
+        Please search the repository issues to see if a similar bug report already exists.
+      options:
+        - label: |
+            I have searched the repository issues and found no similar bug report.
+          required: true
+
+  - type: textarea
+    attributes:
+      label: "t4ai-signature-detect-server Version"
+      description: "Please specify the commit or tag version you're using."
+      placeholder: |
+        Example: version 1.2.3 or commit hash
+      validations:
+        required: true
+
+  - type: dropdown
+    attributes:
+      label: "Component"
+      description: "Please select the component where the bug occurred."
+      options:
+        - "Triton Server"
+        - "Signature Detection"
+        - "Inference"
+        - "Docker"
+        - "Gradio Interface"
+        - "Other"
+        - "I don't know"
+      validations:
+        required: true
+
+  - type: textarea
+    attributes:
+      label: "Current Behavior"
+      description: "Describe how the bug manifests."
+      placeholder: |
+        Example: When performing operation X, the server crashes with an internal error.
+      validations:
+        required: true
+
+  - type: textarea
+    attributes:
+      label: "Expected Behavior"
+      description: "Describe what you expect the behavior to be without the bug."
+      placeholder: |
+        Example: The server should handle operation X gracefully without crashing.
+      validations:
+        required: true
+
+  - type: textarea
+    attributes:
+      label: "Steps to Reproduce"
+      description: "Explain the steps required to duplicate the issue."
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. Scroll down to '...'
+        4. See error
+      validations:
+        required: true
+
+  - type: textarea
+    attributes:
+      label: "Related Code"
+      description: "Provide code snippets or examples that could help understand the issue."
+      placeholder: |
+        ```
+        # Example code here
+        ```
+      validations:
+        required: true
+
+  - type: textarea
+    attributes:
+      label: "Error Messages"
+      description: "Include error messages or stack traces."
+      placeholder: |
+        ```
+        # Example error message here
+        ```
+      validations:
+        required: true
+
+  - type: textarea
+    attributes:
+      label: "Environment"
+      description: "Describe the environment in which the bug occurs."
+      placeholder: |
+        - Operating System: [e.g., Windows 10, macOS 13.5.2, Linux 5.4.0]
+        - Python Version: [e.g., 3.9.7]
+        - Dependencies: [e.g., numpy 1.21.6, OpenCV 4.5.4]
+      validations:
+        required: true
+
+  - type: textarea
+    attributes:
+      label: "Additional Information"
+      description: "Provide any other relevant information."
+      placeholder: |
+        Example: Related issues, suggestions for fixing, or links to discussions.
+
+  - type: checkboxes
+    attributes:
+      label: "If this bug is confirmed, would you be willing to submit a PR?"
+      description: "(Optional) We encourage contributions to help improve the project."
+      options:
+        - label: "Yes, I'd like to help by submitting a PR!"
+        - label: "No, I prefer to just submit the bug report."
+      validations:
+        required: false
