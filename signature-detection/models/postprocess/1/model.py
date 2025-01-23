@@ -1,6 +1,4 @@
 import json
-import logging
-import time
 
 import cv2
 import numpy as np
@@ -69,27 +67,30 @@ class TritonPythonModel:
                 request, "postprocess_input"
             ).as_numpy()
 
+            confidence_threshold_tensor = pb_utils.get_input_tensor_by_name(
+                request, "confidence_threshold"
+            )
             confidence_threshold = (
-                pb_utils.get_input_tensor_by_name(request, "confidence_threshold")
-                .as_numpy()
-                .astype(np.float16)[0]
+                confidence_threshold_tensor.as_numpy()[0]
+                if confidence_threshold_tensor is not None
+                else 0.25
             )
 
+            iou_threshold_tensor = pb_utils.get_input_tensor_by_name(
+                request, "iou_threshold"
+            )
             iou_threshold = (
-                pb_utils.get_input_tensor_by_name(request, "iou_threshold")
-                .as_numpy()
-                .astype(np.float16)[0]
+                iou_threshold_tensor.as_numpy()[0]
+                if iou_threshold_tensor is not None
+                else 0.5
             )
 
             # Transposição e processamento vetorizado
-            outputs = postprocess_input.transpose(
-                0, 2, 1
-            )  
+            outputs = postprocess_input.transpose(0, 2, 1)
 
             # Extração vetorizada de scores e boxes
             class_scores = outputs[0, :, 4:]
             max_scores = np.max(class_scores, axis=1)
-            max_class_indices = np.argmax(class_scores, axis=1)
 
             # Filtragem vetorizada por confidence threshold
             valid_mask = max_scores >= confidence_threshold
