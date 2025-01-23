@@ -1,15 +1,23 @@
 import os
 
 import matplotlib.pyplot as plt
+from PIL import Image
 import pandas as pd
+from pandas import DataFrame
+from typing import Tuple
 
+from inference.inference_pipeline import InferencePipeline, BasePredictor
 from metrics_storage import MetricsStorage
-
-from inference.inference_pipeline import InferencePipeline
 
 
 class SignatureDetector(InferencePipeline):
-    def __init__(self, predictor):
+    def __init__(self, predictor: BasePredictor):
+        """
+        Initializes the SignatureDetector with a predictor.
+
+        Args:
+            predictor: The predictor object for inference.
+        """
         super().__init__(predictor)
 
         self.temp_path = os.path.join(
@@ -17,12 +25,22 @@ class SignatureDetector(InferencePipeline):
         )
         self.metrics_storage = MetricsStorage()
 
-    def update_metrics(self, inference_time):
-        """Update metrics in persistent storage"""
+    def update_metrics(self, inference_time: float) -> None:
+        """
+        Updates metrics in persistent storage.
+
+        Args:
+            inference_time (float): The time taken for inference in milliseconds.
+        """
         self.metrics_storage.add_metric(inference_time)
 
-    def get_metrics(self):
-        """Get current metrics from storage"""
+    def get_metrics(self) -> dict:
+        """
+        Retrieves current metrics from storage.
+
+        Returns:
+            dict: A dictionary containing times, total inferences, average time, and start index.
+        """
         times = self.metrics_storage.get_recent_metrics()
         total = self.metrics_storage.get_total_inferences()
         avg = self.metrics_storage.get_average_time()
@@ -33,17 +51,23 @@ class SignatureDetector(InferencePipeline):
             "times": times,
             "total_inferences": total,
             "avg_time": avg,
-            "start_index": start_index,  # Adicionar índice inicial
+            "start_index": start_index,
         }
 
-    def load_initial_metrics(self):
-        """Load initial metrics for display"""
+    def load_initial_metrics(
+        self,
+    ) -> Tuple[None, str, plt.Figure, plt.Figure, str, str]:
+        """
+        Loads initial metrics for display.
+
+        Returns:
+            tuple: A tuple containing None, total inferences, histogram figure, line figure, average time, and last time.
+        """
         metrics = self.get_metrics()
 
-        if not metrics["times"]:  # Se não houver dados
+        if not metrics["times"]:
             return None, None, None, None, None, None
 
-        # Criar plots data
         hist_data = pd.DataFrame({"Tempo (ms)": metrics["times"]})
         indices = range(
             metrics["start_index"], metrics["start_index"] + len(metrics["times"])
@@ -62,15 +86,26 @@ class SignatureDetector(InferencePipeline):
 
         return (
             None,
-            f"Total de Inferências: {metrics['total_inferences']}",
+            f"{metrics['total_inferences']}",
             hist_fig,
             line_fig,
             f"{metrics['avg_time']:.2f}",
             f"{metrics['times'][-1]:.2f}",
         )
 
-    def create_plots(self, hist_data, line_data):
-        """Helper method to create plots"""
+    def create_plots(
+        self, hist_data: DataFrame, line_data: DataFrame
+    ) -> Tuple[plt.Figure, plt.Figure]:
+        """
+        Helper method to create plots.
+
+        Args:
+            hist_data (pd.DataFrame): Data for histogram plot.
+            line_data (pd.DataFrame): Data for line plot.
+
+        Returns:
+            tuple: A tuple containing histogram figure and line figure.
+        """
         plt.style.use("dark_background")
 
         # Histograma
@@ -121,14 +156,25 @@ class SignatureDetector(InferencePipeline):
         hist_fig.tight_layout()
         line_fig.tight_layout()
 
-        # Fechar as figuras para liberar memória
         plt.close(hist_fig)
         plt.close(line_fig)
 
         return hist_fig, line_fig
 
-    def detect(self, image, conf_thres=0.25, iou_thres=0.5):
-        # Salvar imagem temporariamente
+    def detect(
+        self, image: Image.Image, conf_thres: float = 0.25, iou_thres: float = 0.5
+    ) -> Tuple[Image.Image, dict]:
+        """
+        Detects signatures in the given image.
+
+        Args:
+            image: The image to process.
+            conf_thres (float): Confidence threshold for detection.
+            iou_thres (float): Intersection over Union threshold for detection.
+
+        Returns:
+            tuple: A tuple containing the output image and metrics.
+        """
         image.save(self.temp_path)
 
         response = self.run(self.temp_path, conf=conf_thres, iou=iou_thres)
@@ -139,7 +185,19 @@ class SignatureDetector(InferencePipeline):
 
         return output_image, self.get_metrics()
 
-    def detect_example(self, image, conf_thres=0.25, iou_thres=0.5):
-        """Wrapper method for examples that returns only the image"""
+    def detect_example(
+        self, image: Image.Image, conf_thres: float = 0.25, iou_thres: float = 0.5
+    ) -> Image.Image:
+        """
+        Wrapper method for examples that returns only the image.
+
+        Args:
+            image: The image to process.
+            conf_thres (float): Confidence threshold for detection.
+            iou_thres (float): Intersection over Union threshold for detection.
+
+        Returns:
+            The output image.
+        """
         output_image, _ = self.detect(image, conf_thres, iou_thres)
         return output_image
