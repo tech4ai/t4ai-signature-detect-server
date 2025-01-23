@@ -21,6 +21,16 @@
         "data",
         "maintenance"
       ]
+    },
+    {
+      "login": "jwillians",
+      "name": "Jorge Willians",
+      "avatar_url": "https://avatars.githubusercontent.com/u/299830?v=4",
+      "profile": "https://www.youtube.com/jwillians",
+      "contributions": [
+        "infra",
+        "review"
+      ]
     }
   ],
   "contributorsPerLine": 7,
