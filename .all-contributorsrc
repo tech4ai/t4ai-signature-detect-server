@@ -1,0 +1,28 @@
+{
+  "projectName": "t4ai-signature-detect-server",
+  "projectOwner": "tech4ai",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 100,
+  "commit": true,
+  "commitConvention": "angular",
+  "contributors": [
+    {
+      "login": "samuellimabraz",
+      "name": "Samuel Lima Braz",
+      "avatar_url": "https://avatars.githubusercontent.com/u/115582014?v=4",
+      "profile": "https://github.com/samuellimabraz",
+      "contributions": [
+        "code",
+        "doc",
+        "data",
+        "maintenance"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "linkToUsage": true
+}

@@ -1,4 +1,7 @@
 # Object Detection with Triton Inference Server
+<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+[![All Contributors](https://img.shields.io/badge/all_contributors-1-orange.svg?style=flat-square)](#contributors-)
+<!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 <table>
   <tr>
@@ -32,6 +35,7 @@ This project provides a  pipeline for deploying and performing inference with a 
 - [Limit Endpoint Access](#limit-endpoint-access)
 - [Model Analyzer](#-model-analyzer)
 - [Model & Dataset Resources](#-model--dataset-resources)
+- [Utils](#utils)
 - [Notes](#-notes)
 - [License](#-license)
 
@@ -210,12 +214,24 @@ classDiagram
     InferencePipeline --> BasePredictor : uses
 ```
 
-
 ## 🔒 Limit Endpoint Access
 
-To limit access to some protocols of the server, you can use the `--http-restricted-api` or `--grpc-restricted-protocol` flags. This will restrict the determined protocol to only allow acces by a <restricted-key>=<restricted-value> pair in the request headers. 
+To control access to specific server protocols, the server uses the `--http-restricted-api` and `--grpc-restricted-protocol` flags. These flags ensure that only requests containing the required `admin-key` header with the correct value will have access to restricted endpoints.
 
-In this project the [`entrypoint.sh`](entrypoint.sh) script is configured to use the `--http-restricted-api` flag with the `admin-key` as the restricted key and the value defined in the `.env` file. The GRPC protocol is disabled with the `--allow-grpc=false` flag.
+- Checkout the triton documentation for more information on [Limit Endpoint Access (BETA)](https://docs.nvidia.com/deeplearning/triton-inference-server/user-guide/docs/customization_guide/inference_protocols.html#limit-endpoint-access-beta)
+
+In this project, the entrance configuration restricts access to the following endpoints via both HTTP and GRPC protocols:
+
+### Restricted Endpoints:
+- model-repository
+- model-config
+- shared-memory
+- statistics
+- trace
+
+### Entry Point Configuration
+
+The [**`entrypoint.sh`**](entrypoint.sh) script is configured to restrict access to the server's administrative endpoints. The access control is enforced via both HTTP and GRPC protocols, ensuring that only requests containing the `admin-key` header with the correct value will be allowed.
 
 ```bash
 tritonserver \
@@ -224,11 +240,18 @@ tritonserver \
   --load-model=* \
   --log-verbose=1 \
   --allow-metrics=false \
-  --allow-grpc=false \
+  --allow-grpc=true \
+  --grpc-restricted-protocol=model-repository,model-config,shared-memory,statistics,trace:admin-key=${TRITON_ADMIN_KEY} \
   --http-restricted-api=model-repository,model-config,shared-memory,statistics,trace:admin-key=${TRITON_ADMIN_KEY}
 ```
 
-This allow the server to accept inference by any user, but only allow access to the model repository, model config, shared memory, statistics and trace endpoints if the request contains the `admin-key` header with the value defined in the `.env` file.
+### Key Points:
+1. **Inference Access**: The server allows inference requests from any user.
+2. **Admin Access**: Access to the restricted endpoints (model-repository, model-config, etc.) is limited to requests that include the `admin-key` header with the correct value defined in the `.env` file.
+3. **GRPC Protocol**: The GRPC protocol is enabled and restricted in the same way as HTTP, providing consistent security across both protocols.
+
+This configuration ensures that sensitive operations and configurations are protected, while still allowing regular inference requests to proceed without restrictions.
+
 
 ## 📊 Model Analyzer
 
@@ -268,7 +291,11 @@ This project uses a custom-trained YOLOv8 model for signature detection. All mod
 
   [![Dataset Card](https://huggingface.co/datasets/huggingface/badges/resolve/main/dataset-on-hf-md.svg)](https://huggingface.co/datasets/tech4humans/signature-detection)
 
-## Utils Section
+- **Demo Space**: Provides a live demo space for testing the model and dataset using the Hugging Spaces.
+
+  [![Open in Spaces](https://huggingface.co/datasets/huggingface/badges/resolve/main/open-in-hf-spaces-md.svg)](https://huggingface.co/spaces/tech4humans/signature-detection)
+
+## Utils
 
 The [`utils/`](./signature-detection/utils/) folder contains scripts designed to simplify interactions with cloud storage providers and the process of exporting machine learning models. Below is an overview of the available scripts and their usage examples.
 
@@ -336,9 +363,58 @@ The [`export_model.py`](./signature-detection/utils/export_model.py) script simp
 - `--output-path`: Path to save the exported model.
 - `--format`: Export format (`onnx` or `tensorrt`).
 
+## Contributing
+
+First off, thanks for taking the time to contribute! Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make will benefit everybody else and are **greatly appreciated**.
 
 
-## 📄 License
+Please read [our contribution guidelines](docs/CONTRIBUTING.md), and thank you for being involved!
 
-This project is licensed under the Apache License 2.0. See [`LICENSE`](LICENSE) for more details.
+## Authors & contributors
 
+The original setup of this repository is by [Samuel Lima Braz](https://github.com/samuellimabraz).
+
+
+
+
+
+This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
+
+
+## License
+
+This project is licensed under the **Apache Software License 2.0**.
+
+See [LICENSE](LICENSE) for more information.
+
+
+## Contributors ✨
+
+Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<table>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/samuellimabraz"><img src="https://avatars.githubusercontent.com/u/115582014?v=4?s=100" width="100px;" alt="Samuel Lima Braz"/><br /><sub><b>Samuel Lima Braz</b></sub></a><br /><a href="https://github.com/tech4ai/t4ai-signature-detect-server/commits?author=samuellimabraz" title="Code">💻</a> <a href="https://github.com/tech4ai/t4ai-signature-detect-server/commits?author=samuellimabraz" title="Documentation">📖</a> <a href="#data-samuellimabraz" title="Data">🔣</a> <a href="#maintenance-samuellimabraz" title="Maintenance">🚧</a></td>
+    </tr>
+  </tbody>
+  <tfoot>
+    <tr>
+      <td align="center" size="13px" colspan="7">
+        <img src="https://raw.githubusercontent.com/all-contributors/all-contributors-cli/1b8533af435da9854653492b1327a23a4dbd0a10/assets/logo-small.svg">
+          <a href="https://all-contributors.js.org/docs/en/bot/usage">Add your contributions</a>
+        </img>
+      </td>
+    </tr>
+  </tfoot>
+</table>
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
+This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
