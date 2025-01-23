@@ -31,6 +31,18 @@
         "infra",
         "review"
       ]
+    },
+    {
+      "login": "NixonMSilva",
+      "name": "Nixon Silva",
+      "avatar_url": "https://avatars.githubusercontent.com/u/15185532?v=4",
+      "profile": "https://github.com/NixonMSilva",
+      "contributions": [
+        "infra",
+        "review",
+        "security",
+        "tool"
+      ]
     }
   ],
   "contributorsPerLine": 7,
