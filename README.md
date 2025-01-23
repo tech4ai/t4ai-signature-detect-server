@@ -1,7 +1,4 @@
 # Object Detection with Triton Inference Server
-<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-4-orange.svg?style=flat-square)](#contributors-)
-<!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 <table>
   <tr>
@@ -32,11 +29,20 @@ This project provides a  pipeline for deploying and performing inference with a 
 - [Installation](#installation)
 - [Ensemble Model](#ensemble-model)
 - [Inference](#inference)
+  - [Available Methods](#available-methods)
+  - [How To Use](#how-to-use)
+    - [Graphical User Interface (GUI)](#1-graphical-user-interface-gui)
+    - [Command-Line Interface (CLI)](#2-command-line-interface-cli)
+    - [ONNX Runtime](#3-onnx-runtime)
 - [Limit Endpoint Access](#limit-endpoint-access)
 - [Model Analyzer](#-model-analyzer)
 - [Model & Dataset Resources](#-model--dataset-resources)
 - [Utils](#utils)
-- [Notes](#-notes)
+  - [Downloading Models from Cloud Storage](#1-downloading-models-from-cloud-storage)
+  - [Uploading Models to Cloud Storage](#2-uploading-models-to-cloud-storage)
+  - [Exporting Models](#3-exporting-models)
+- [Contributors](#contributors-)
+- [Contributing](#contributing)
 - [License](#-license)
 
 
@@ -168,13 +174,116 @@ flowchart TB
     style Output fill:#9ff,stroke:#333
 ```
 
-## ⚡ Inference 
 
-The [`inference_pipeline.py`](signature-detection/inference/inference_pipeline.py) script can be used to perform inference on images using different methods. The script supports the following methods:
 
-- **Triton Client**: Inference using the Triton Inference Server SDK.
-- **Vertex AI**: Inference using Google Cloud's Vertex AI Enpoint.
-- **Http**: Inference using HTTP requests to the Triton Inference Server.
+Aqui está uma versão melhorada e mais organizada da seção **Inference** do seu README:
+
+---
+
+## ⚡ Inference
+
+The inference module allows you to perform image analysis using different methods, leveraging both local and cloud-based solutions. The pipeline is designed to be flexible and supports multiple prediction methods, making it easy to experiment and deploy in different environments.
+
+### Available Methods
+
+The pipeline supports the following inference methods:
+
+1. **Triton Client**: Inference using the Triton Inference Server SDK.
+2. **Vertex AI**: Inference using Google Cloud's Vertex AI Endpoint.
+3. **HTTP**: Inference using HTTP requests to the Triton Inference Server.
+
+### How To Use
+
+The inference module provides both a graphical user interface (GUI) and command-line tools for performing inference.
+
+#### 1. **Graphical User Interface (GUI)**
+
+The GUI allows you to interactively test the deployed model and visualize the results in real-time.
+
+- **Script**: [`inference_gui.py`](signature-detection/gui/inference_gui.py)
+- **Usage**: Run the script to launch the GUI interface.
+
+```bash
+python signature-detection/gui/inference_gui.py --triton-url {triton_url} 
+```
+
+<video controls autoplay src="./assets/gradio-demo.mp4"></video>
+
+#### 2. **Command-Line Interface (CLI)**
+
+The CLI tool provides a flexible way to perform inference on a dataset using different predictors.
+
+- **Script**: [`inference_pipeline.py`](signature-detection/inference/inference_pipeline.py)
+- **Usage**: The script will show a menu to select a predictor and perform inference on the test dataset.
+
+```bash
+python signature-detection/inference/inference_pipeline.py
+```
+
+<details> 
+<summary><strong>💡</strong></summary>
+<div style="background-color:rgb(38, 35, 41); border-radius: 4px; padding: 1rem; border-left: 4px solid #2ecc71; margin: 1rem 0;">
+  <div style="display: flex; align-items: center;">
+    <div>
+      <p style="color: #ffffff;  font-size: 1.0em;">
+        This script calculates metrics of inference time and gives you a tabulated final report like this:
+      </p>
+      <pre style="background-color: rgb(38, 35, 41); padding: 1rem; border-radius: 4px; margin: 1rem 0;">
+        <code style="color: #fff;">
++-----------------------+----------------------+
+| Métrica               | Valor                |
++=======================+======================+
+| <span style="color: #2ecc71">Tempo médio (ms)</span>      | 141.20447635650635   |
++----------------------------+-----------------+
+| <span style="color: #2ecc71">Desvio padrão (ms)</span>    | 17.0417248165512     |
++----------------------------+-----------------+
+| <span style="color: #2ecc71">Tempo máximo (ms)</span>     | 175.67205429077148   |
++----------------------------+-----------------+
+| <span style="color: #2ecc71">Tempo mínimo (ms)</span>     | 125.48470497131348   |
++----------------------------+-----------------+
+| <span style="color: #2ecc71">Tempo total (min)</span>     | 00:02:541            |
++----------------------------+-----------------+
+| <span style="color: #2ecc71">Número de inferências</span> | 18                   |
++----------------------------+-----------------+
+        </code>
+      </pre>
+    </div>
+  </div>
+</div>
+</details>
+
+#### 3. **ONNX Runtime**
+
+For local inference without relying on external services, you can use the ONNX runtime.
+
+- **Script**: [`inference_onnx.py`](signature-detection/inference/inference_onnx.py)
+- **Usage**: Perform inference with the ONNX runtime locally.
+
+```bash
+python signature-detection/inference/inference_onnx.py \
+  --model_path {onnx_model_path} \
+  --img './input/test_image.jpg' \
+  --conf-thres 0.5 \
+  --iou-thres 0.5
+```
+
+- All arguments are `optional`, the default values are:
+  - `--model_path`: `signature-detection/models/yolov8s.onnx`
+  - `--img`: Random image from the test dataset
+  - `--conf-thres`: `0.5`
+  - `--iou-thres`: `0.5`
+
+### Extending the Pipeline
+
+If you need to extend the inference pipeline or add custom prediction methods, you can:
+
+1. Create a new predictor class that inherits from `BasePredictor`.
+2. Implement the required methods (`request`, `format_response`, etc.).
+3. Update the `InferencePipeline` to support the new predictor.
+
+#### Class Diagram
+
+The inference pipeline is built around a modular class structure that allows for easy extension and customization. Here's the class hierarchy:
 
 ```mermaid
 classDiagram
@@ -214,11 +323,12 @@ classDiagram
     InferencePipeline --> BasePredictor : uses
 ```
 
+
 ## 🔒 Limit Endpoint Access
 
 To control access to specific server protocols, the server uses the `--http-restricted-api` and `--grpc-restricted-protocol` flags. These flags ensure that only requests containing the required `admin-key` header with the correct value will have access to restricted endpoints.
 
-- Checkout the triton documentation for more information on [Limit Endpoint Access (BETA)](https://docs.nvidia.com/deeplearning/triton-inference-server/user-guide/docs/customization_guide/inference_protocols.html#limit-endpoint-access-beta)
+- Checkout the triton documentation for more information on [Inference Protocols and APIs](https://docs.nvidia.com/deeplearning/triton-inference-server/user-guide/docs/customization_guide/inference_protocols.html#limit-endpoint-access-beta)
 
 In this project, the entrance configuration restricts access to the following endpoints via both HTTP and GRPC protocols:
 
@@ -295,7 +405,7 @@ This project uses a custom-trained YOLOv8 model for signature detection. All mod
 
   [![Open in Spaces](https://huggingface.co/datasets/huggingface/badges/resolve/main/open-in-hf-spaces-md.svg)](https://huggingface.co/spaces/tech4humans/signature-detection)
 
-## Utils
+## 🧰 Utils
 
 The [`utils/`](./signature-detection/utils/) folder contains scripts designed to simplify interactions with cloud storage providers and the process of exporting machine learning models. Below is an overview of the available scripts and their usage examples.
 
@@ -363,34 +473,8 @@ The [`export_model.py`](./signature-detection/utils/export_model.py) script simp
 - `--output-path`: Path to save the exported model.
 - `--format`: Export format (`onnx` or `tensorrt`).
 
-## Contributing
+## 🤝 Contributors 
 
-First off, thanks for taking the time to contribute! Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make will benefit everybody else and are **greatly appreciated**.
-
-
-Please read [our contribution guidelines](docs/CONTRIBUTING.md), and thank you for being involved!
-
-## Authors & contributors
-
-The original setup of this repository is by [Samuel Lima Braz](https://github.com/samuellimabraz).
-
-
-
-
-
-This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
-
-
-## License
-
-This project is licensed under the **Apache Software License 2.0**.
-
-See [LICENSE](LICENSE) for more information.
-
-
-## Contributors ✨
-
-Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
 <!-- prettier-ignore-start -->
@@ -398,10 +482,10 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 <table>
   <tbody>
     <tr>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/samuellimabraz"><img src="https://avatars.githubusercontent.com/u/115582014?v=4?s=100" width="100px;" alt="Samuel Lima Braz"/><br /><sub><b>Samuel Lima Braz</b></sub></a><br /><a href="https://github.com/tech4ai/t4ai-signature-detect-server/commits?author=samuellimabraz" title="Code">💻</a> <a href="https://github.com/tech4ai/t4ai-signature-detect-server/commits?author=samuellimabraz" title="Documentation">📖</a> <a href="#data-samuellimabraz" title="Data">🔣</a> <a href="#maintenance-samuellimabraz" title="Maintenance">🚧</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://www.youtube.com/jwillians"><img src="https://avatars.githubusercontent.com/u/299830?v=4?s=100" width="100px;" alt="Jorge Willians"/><br /><sub><b>Jorge Willians</b></sub></a><br /><a href="#infra-jwillians" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="https://github.com/tech4ai/t4ai-signature-detect-server/pulls?q=is%3Apr+reviewed-by%3Ajwillians" title="Reviewed Pull Requests">👀</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/NixonMSilva"><img src="https://avatars.githubusercontent.com/u/15185532?v=4?s=100" width="100px;" alt="Nixon Silva"/><br /><sub><b>Nixon Silva</b></sub></a><br /><a href="#infra-NixonMSilva" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="https://github.com/tech4ai/t4ai-signature-detect-server/pulls?q=is%3Apr+reviewed-by%3ANixonMSilva" title="Reviewed Pull Requests">👀</a> <a href="#security-NixonMSilva" title="Security">🛡️</a> <a href="#tool-NixonMSilva" title="Tools">🔧</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/ronaldobalzi-tech4h"><img src="https://avatars.githubusercontent.com/u/136820259?v=4?s=100" width="100px;" alt="ronaldobalzi-tech4h"/><br /><sub><b>ronaldobalzi-tech4h</b></sub></a><br /><a href="#infra-ronaldobalzi-tech4h" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="https://github.com/tech4ai/t4ai-signature-detect-server/pulls?q=is%3Apr+reviewed-by%3Aronaldobalzi-tech4h" title="Reviewed Pull Requests">👀</a> <a href="#security-ronaldobalzi-tech4h" title="Security">🛡️</a> <a href="#tool-ronaldobalzi-tech4h" title="Tools">🔧</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/samuellimabraz"><img src="https://avatars.githubusercontent.com/u/115582014?v=4?s=100" width="100px;" alt="Samuel Lima Braz"/><br /><sub><b>Samuel Lima Braz</b></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/jwillians"><img src="https://avatars.githubusercontent.com/u/299830?v=4?s=100" width="100px;" alt="Jorge Willians"/><br /><sub><b>Jorge Willians</b></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/NixonMSilva"><img src="https://avatars.githubusercontent.com/u/15185532?v=4?s=100" width="100px;" alt="Nixon Silva"/><br /><sub><b>Nixon Silva</b></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/ronaldobalzi-tech4h"><img src="https://avatars.githubusercontent.com/u/136820259?v=4?s=100" width="100px;" alt="ronaldobalzi-tech4h"/><br /><sub><b>ronaldobalzi-tech4h</b></td>
     </tr>
   </tbody>
   <tfoot>
@@ -420,4 +504,15 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
-This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
+## Contributing
+
+First off, thanks for taking the time to contribute! Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make will benefit everybody else and are **greatly appreciated**.
+
+
+Please read [our contribution guidelines](docs/CONTRIBUTING.md), and thank you for being involved!
+
+## License
+
+This project is licensed under the **Apache Software License 2.0**.
+
+See [LICENSE](LICENSE) for more information.
