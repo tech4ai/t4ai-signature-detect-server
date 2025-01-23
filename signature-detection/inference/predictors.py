@@ -255,11 +255,11 @@ class TritonClientPredictor(BasePredictor):
     MODEL_CONFIG = {
         "input": [
             {"data_type": "TYPE_UINT8", "dims": ["-1"], "name": "raw_image"},
-            {"data_type": "TYPE_FP32", "dims": ["1"], "name": "confidence_threshold"},
-            {"data_type": "TYPE_FP32", "dims": ["1"], "name": "iou_threshold"},
+            {"data_type": "TYPE_FP16", "dims": ["1"], "name": "confidence_threshold"},
+            {"data_type": "TYPE_FP16", "dims": ["1"], "name": "iou_threshold"},
         ],
         "output": [
-            {"data_type": "TYPE_FP32", "dims": ["-1", "5"], "name": "detection_result"}
+            {"data_type": "TYPE_FP16", "dims": ["-1", "5"], "name": "detection_result"}
         ],
     }
 
