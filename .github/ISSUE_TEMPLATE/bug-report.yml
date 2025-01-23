@@ -23,8 +23,7 @@ body:
       description: "Please specify the commit or tag version you're using."
       placeholder: |
         Example: version 1.2.3 or commit hash
-      validations:
-        required: true
+      required: true
 
   - type: dropdown
     attributes:
@@ -38,8 +37,7 @@ body:
         - "Gradio Interface"
         - "Other"
         - "I don't know"
-      validations:
-        required: true
+      required: true
 
   - type: textarea
     attributes:
@@ -47,8 +45,7 @@ body:
       description: "Describe how the bug manifests."
       placeholder: |
         Example: When performing operation X, the server crashes with an internal error.
-      validations:
-        required: true
+      required: true
 
   - type: textarea
     attributes:
@@ -56,8 +53,7 @@ body:
       description: "Describe what you expect the behavior to be without the bug."
       placeholder: |
         Example: The server should handle operation X gracefully without crashing.
-      validations:
-        required: true
+      required: true
 
   - type: textarea
     attributes:
@@ -68,8 +64,7 @@ body:
         2. Click on '...'
         3. Scroll down to '...'
         4. See error
-      validations:
-        required: true
+      required: true
 
   - type: textarea
     attributes:
@@ -79,8 +74,7 @@ body:
         ```
         # Example code here
         ```
-      validations:
-        required: true
+      required: true
 
   - type: textarea
     attributes:
@@ -90,8 +84,7 @@ body:
         ```
         # Example error message here
         ```
-      validations:
-        required: true
+      required: true
 
   - type: textarea
     attributes:
@@ -101,8 +94,7 @@ body:
         - Operating System: [e.g., Windows 10, macOS 13.5.2, Linux 5.4.0]
         - Python Version: [e.g., 3.9.7]
         - Dependencies: [e.g., numpy 1.21.6, OpenCV 4.5.4]
-      validations:
-        required: true
+      required: true
 
   - type: textarea
     attributes:
@@ -118,5 +110,3 @@ body:
       options:
         - label: "Yes, I'd like to help by submitting a PR!"
         - label: "No, I prefer to just submit the bug report."
-      validations:
-        required: false
