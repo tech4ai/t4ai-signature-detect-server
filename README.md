@@ -41,7 +41,7 @@ This project provides a  pipeline for deploying and performing inference with a 
   - [Downloading Models from Cloud Storage](#1-downloading-models-from-cloud-storage)
   - [Uploading Models to Cloud Storage](#2-uploading-models-to-cloud-storage)
   - [Exporting Models](#3-exporting-models)
-- [Contributors](#contributors-)
+- [Contributors](#contributors)
 - [Contributing](#contributing)
 - [License](#-license)
 
@@ -91,7 +91,7 @@ This project provides a  pipeline for deploying and performing inference with a 
 3. **Configure your environment**: Set up Google Cloud credentials and env file (See [.env.example](.env.example)).
 4. **Build and deploy**: 
    - **Vertex AI:** Follow the instructions in [`deploy_vertex_ai.sh`](server/vertexai/deploy_vertex_ai.sh) to deploy the model to Vertex AI Endpoint. Or programmatically using [`nvidia_triton_custom_container_prediction.ipynb`](server/vertexai/nvidia_triton_custom_container_prediction.ipynb).
-   - **Docker:** Run the Triton Inference Server using the provided [Dockerfile](Dockerfile.dev) The [`serve_triton_local_.py`](server/local/serve_triton_local.py) script can be used to start the server locally.
+   - **Docker:** Run the Triton Inference Server using the provided [Dockerfile](Dockerfile.dev). The [`serve_triton_local_.py`](server/local/serve_triton_local.py) script can be used to start the server locally.
     - **docker compose:** You can use the provided [`docker-compose.yml`](docker-compose.yml).
 5. **Run inference**: The scripts in signature-detection/inference can be used to perform inference on images using differents methods (requests, triton client, vertex ai).
    - **GUI:** Use the [`inference_gui.py`](signature-detection/gui/inference_gui.py) to test the deployed model and visualize the results.
@@ -173,10 +173,6 @@ flowchart TB
     style Input fill:#f9f,stroke:#333
     style Output fill:#9ff,stroke:#333
 ```
-
-
-
-Aqui está uma versão melhorada e mais organizada da seção **Inference** do seu README:
 
 ---
 
