@@ -1,6 +1,6 @@
 # Object Detection with Triton Inference Server
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-3-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 <table>
@@ -400,6 +400,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/samuellimabraz"><img src="https://avatars.githubusercontent.com/u/115582014?v=4?s=100" width="100px;" alt="Samuel Lima Braz"/><br /><sub><b>Samuel Lima Braz</b></sub></a><br /><a href="https://github.com/tech4ai/t4ai-signature-detect-server/commits?author=samuellimabraz" title="Code">💻</a> <a href="https://github.com/tech4ai/t4ai-signature-detect-server/commits?author=samuellimabraz" title="Documentation">📖</a> <a href="#data-samuellimabraz" title="Data">🔣</a> <a href="#maintenance-samuellimabraz" title="Maintenance">🚧</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://www.youtube.com/jwillians"><img src="https://avatars.githubusercontent.com/u/299830?v=4?s=100" width="100px;" alt="Jorge Willians"/><br /><sub><b>Jorge Willians</b></sub></a><br /><a href="#infra-jwillians" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="https://github.com/tech4ai/t4ai-signature-detect-server/pulls?q=is%3Apr+reviewed-by%3Ajwillians" title="Reviewed Pull Requests">👀</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/NixonMSilva"><img src="https://avatars.githubusercontent.com/u/15185532?v=4?s=100" width="100px;" alt="Nixon Silva"/><br /><sub><b>Nixon Silva</b></sub></a><br /><a href="#infra-NixonMSilva" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="https://github.com/tech4ai/t4ai-signature-detect-server/pulls?q=is%3Apr+reviewed-by%3ANixonMSilva" title="Reviewed Pull Requests">👀</a> <a href="#security-NixonMSilva" title="Security">🛡️</a> <a href="#tool-NixonMSilva" title="Tools">🔧</a></td>
     </tr>
   </tbody>
   <tfoot>
