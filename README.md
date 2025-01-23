@@ -207,7 +207,7 @@ The GUI allows you to interactively test the deployed model and visualize the re
 python signature-detection/gui/inference_gui.py --triton-url {triton_url} 
 ```
 
-<video controls autoplay src="./assets/gradio-demo.mp4"></video>
+https://github.com/user-attachments/assets/d41a45a1-8783-41a6-b963-b315d0e994b4
 
 #### 2. **Command-Line Interface (CLI)**
 
