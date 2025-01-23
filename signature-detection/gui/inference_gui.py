@@ -8,12 +8,14 @@ from detector import SignatureDetector
 from metrics_storage import DATABASE_DIR, DATABASE_PATH
 from inference.predictors import TritonClientPredictor
 
+TRITON_SERVER_URL = (
+    "grpc://localhost:8001/yolov8_ensemble"  # Replace with your Triton server URL
+)
+predictor = TritonClientPredictor(url=TRITON_SERVER_URL)
+detector = SignatureDetector(predictor)
+
 
 def create_gradio_interface():
-    # Seleção do servidor Triton e configuração inicial
-    TRITON_SERVER_URL = "grpc://t4ai-signature-detector-100881400340.us-central1.run.app/yolov8_ensemble"
-    predictor = TritonClientPredictor(url=TRITON_SERVER_URL)
-    detector = SignatureDetector(predictor)
 
     css = """
     .custom-button {
@@ -51,7 +53,7 @@ def create_gradio_interface():
     """
     example_dir = os.path.join(os.getcwd(), "signature-detection", "gui", "examples")
 
-    def process_image(image, conf_thres, iou_thres):
+    def process_image(image: Image.Image, conf_thres: float, iou_thres: float):
         if image is None:
             return None, None, None, None, None, None
 
@@ -77,7 +79,7 @@ def create_gradio_interface():
         return (
             output_image,
             gr.update(
-                value=f"Total de Inferências: {metrics['total_inferences']}",
+                value=f"{metrics['total_inferences']}",
                 container=True,
             ),
             hist_fig,
@@ -109,10 +111,25 @@ def create_gradio_interface():
         ),
         css=css,
     ) as iface:
+        gr.HTML(
+            """
+            <h1>Tech4Humans - Detector de Assinaturas</h1>
+    
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <a href="https://huggingface.co/tech4humans/yolov8s-signature-detector">
+                    <img src="https://huggingface.co/datasets/huggingface/badges/resolve/main/model-on-hf-md-dark.svg" alt="Model on HF">
+                </a>
+                <a href="https://huggingface.co/datasets/tech4humans/signature-detection">
+                    <img src="https://huggingface.co/datasets/huggingface/badges/resolve/main/dataset-on-hf-md-dark.svg" alt="Dataset on HF">
+                </a>
+                <a href="https://github.com/tech4ai/t4ai-signature-detect-server">
+                    <img src="https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white" alt="GitHub">
+                </a>
+            </div>
+            """
+        )
         gr.Markdown(
             """
-            # Tech4Humans - Detector de Assinaturas
-            
             Este sistema utiliza o modelo [**YOLOv8s**](https://huggingface.co/tech4humans/yolov8s-signature-detector), especialmente ajustado para a detecção de assinaturas manuscritas em imagens de documentos. 
            
             Com este detector, é possível identificar assinaturas em documentos digitais com elevada precisão em tempo real, sendo ideal para
@@ -223,10 +240,8 @@ def create_gradio_interface():
                 - **mAP@50-95:** 67,35%
                 - **Tempo de Inferência (CPU):** 171,56 ms
 
-                O processo completo de treinamento, ajuste de hiperparâmetros, e avaliação do modelo pode ser consultado em detalhes no repositório abaixo.
-
-                [Leia o README completo no Hugging Face Models](https://huggingface.co/tech4humans/yolov8s-signature-detector)
-
+                Os detalhes completos sobre os processos de treinamento, ajuste de hiperparâmetros, avaliação do modelo, construção do dataset e servidor de inferência podem ser consultados nos links abaixo.
+                
                 ---
 
                 **Desenvolvido por [Tech4Humans](https://www.tech4h.com.br/)** | **Modelo:** [YOLOv8s](https://huggingface.co/tech4humans/yolov8s-signature-detector) | **Datasets:** [Tobacco800](https://paperswithcode.com/dataset/tobacco-800), [signatures-xc8up](https://universe.roboflow.com/roboflow-100/signatures-xc8up)
