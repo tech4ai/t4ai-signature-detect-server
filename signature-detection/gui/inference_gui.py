@@ -1,3 +1,4 @@
+import argparse
 import os
 
 import gradio as gr
@@ -5,12 +6,22 @@ import pandas as pd
 from PIL import Image
 
 from detector import SignatureDetector
-from metrics_storage import DATABASE_DIR, DATABASE_PATH
 from inference.predictors import TritonClientPredictor
+from metrics_storage import DATABASE_DIR, DATABASE_PATH
 
-TRITON_SERVER_URL = (
-    "grpc://localhost:8001/yolov8_ensemble"  # Replace with your Triton server URL
+# Parse command-line arguments
+parser = argparse.ArgumentParser(description="Signature Detection GUI")
+parser.add_argument(
+    "--triton-url",
+    type=str,
+    default="grpc://localhost:8001/yolov8_ensemble",
+    help="URL of the Triton server, e.g., grpc://localhost:8001/yolov8_ensemble",
 )
+args = parser.parse_args()
+
+# Get the Triton server URL from the command-line arguments
+TRITON_SERVER_URL = args.triton_url
+
 predictor = TritonClientPredictor(url=TRITON_SERVER_URL)
 detector = SignatureDetector(predictor)
 
