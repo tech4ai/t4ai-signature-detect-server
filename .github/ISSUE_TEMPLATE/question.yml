@@ -24,13 +24,13 @@ body:
         Please select the component related to your question.
       options:
         - "Server Configuration"
-        - "Model Deployment"
+        - "Model Repository"
         - "Inference"
         - "Performance Optimization"
         - "Integration"
         - "Other"
-      validations:
-        required: true
+    validations:
+      required: true
 
   - type: textarea
     attributes:
@@ -41,8 +41,8 @@ body:
         📝 Provide your question and context here.
         Example:
         "How can I optimize inference time when deploying a YOLO model on Triton Server?"
-      validations:
-        required: true
+    validations:
+      required: true
 
   - type: textarea
     attributes:
@@ -63,5 +63,3 @@ body:
       options:
         - label: "Yes, I'd like to help!"
         - label: "No, I just need answers."
-      validations:
-        required: false
