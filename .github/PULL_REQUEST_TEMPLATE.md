@@ -1,8 +1,9 @@
-<!--- Please provide a general summary of your changes in the title above -->
+## Title
+
+## Description
+<!--- Provide a brief description of the changes being implemented and the issue or functionality being addressed. Keep the focus on the most important points and the purpose of the changes. -->
 
 ## Pull Request Type
-
-<!-- Please try to limit your pull request to one type; submit multiple pull requests if needed. -->
 
 Please check the type of change your PR introduces:
 
@@ -18,15 +19,19 @@ Please check the type of change your PR introduces:
 
 <!-- Please describe the current behavior that you are modifying, or link to a relevant issue. -->
 
-Issue Number: N/A
+Issue Number: N/A (Optional)
 
 ## New Behavior
 
-<!-- Please describe the behavior or changes that are being added by this PR. -->
+<!-- Please describe the behavior or changes that are being added by this PR. Modified/Created Files -->
 
-- [ ] Change 1: Description of change 1
-- [ ] Change 2: Description of change 2
-- [ ] Change 3: Description of change 3
+- File Name 1 :
+Changes: Briefly describe the changes or implementations made to this file.
+- File Name 2 :
+Changes: Briefly describe the changes or implementations made to this file.
+- File Name 3 :
+Changes: Briefly describe the changes or implementations made to this file.
+(Continue the list as necessary for each file modified or created.)
 
 ## Does This Introduce a Breaking Change?
 
@@ -40,7 +45,7 @@ Issue Number: N/A
 - **Impact:** Description of the impact of the breaking change.
 - **Migration Path:** Steps to migrate existing applications to the new version.
 
-## Additional Information
+## Additional Information (Optional)
 
 <!-- Any other information that is important to this PR, such as screenshots of how the component looks before and after the change. -->
 
