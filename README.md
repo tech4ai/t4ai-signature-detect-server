@@ -434,12 +434,12 @@ The [`upload_models_to_cloud.py`](./signature-detection/utils/upload_models_to_c
 
 - **Google Cloud Storage (GCP):**
   ```bash
-  python signature-detection/utils/upload_models_to_cloud.py --provider gcp --bucket-name REDACTED_BUCKET_NAME
+  python signature-detection/utils/upload_models_to_cloud.py --provider gcp --bucket-name <your-bucket-name>
   ```
 
 - **Azure Blob Storage:**
   ```bash
-  python signature-detection/utils/upload_models_to_cloud.py --provider az --container-name REDACTED_CONTAINER_NAME --connection-string "<your-connection-string>"
+  python signature-detection/utils/upload_models_to_cloud.py --provider az --container-name <your-container-name> --connection-string "<your-connection-string>"
   ```
 
 **Arguments:**
