@@ -1,15 +1,18 @@
 gcloud init
 gcloud services enable artifactregistry.googleapis.com
 
+LOCATION_ID="<YOUR_LOCATION_ID>" # Ex: us-central1
+
 # Create a new repository
 gcloud artifacts repositories create t4ai-nvidia-triton \
     --repository-format=docker \
-    --location=us-central1 \
+    --location=$LOCATION_ID \
     --description="NVIDIA Triton Docker repository"
 
 # Create the image docker container
 NGC_TRITON_IMAGE_URI="nvcr.io/nvidia/tritonserver:24.11-py3"
-NGC_TRITON_TAG ="REDACTED_CONTAINER_URL:24.11"
+MODEL_ARTIFACTS_REPOSITORY="<YOUR_MODEL_ARTIFACTS_REPOSITORY>" # Ex: gs://<YOUR_BUCKET_NAME>/<YOUR_MODEL_ARTIFACTS_FOLDER>
+NGC_TRITON_TAG="$LOCATION_ID-docker.pkg.dev/<PROJECT_ID>/nvidia-triton/vertex-triton-inference:24.11"
 
 docker pull $NGC_TRITON_IMAGE_URI
 docker tag $NGC_TRITON_IMAGE_URI $NGC_TRITON_TAG
@@ -25,7 +28,7 @@ gcloud ai models upload \
     --region=us-central1 \
     --display-name=signature-detector \
     --container-image-uri=$NGC_TRITON_TAG \
-    --artifact-uri=REDACTED_BUCKET_PATH \
+    --artifact-uri=$MODEL_ARTIFACTS_REPOSITORY \
     --container-args='-model-control-mode=poll,--repository-poll-secs=60,--allow-http=true,--allow-vertex-ai=True'
 
 ## Create the endpoint
