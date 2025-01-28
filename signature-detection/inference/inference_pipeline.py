@@ -92,6 +92,7 @@ class InferencePipeline:
 
         return cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
 
+
 def get_image_paths(dataset_dir: str, split: str = "test") -> List[str]:
     """
     Retrieves image file paths from a dataset directory.
@@ -202,15 +203,15 @@ def run_pipeline(pipeline: InferencePipeline, image_paths: List[str]) -> None:
     formatted_total_time = f"{minutes:02}:{seconds:02}:{milliseconds:03}"
 
     metrics = {
-        "Métrica": [
-            "Tempo médio (ms)",
-            "Desvio padrão (ms)",
-            "Tempo máximo (ms)",
-            "Tempo mínimo (ms)",
-            "Tempo total (min)",
-            "Número de inferências",
+        "Metric": [
+            "Mean time (ms)",
+            "Standard deviation (ms)",
+            "Max time (ms)",
+            "Min time (ms)",
+            "Total time (min)",
+            "Number of inferences",
         ],
-        "Valor": [
+        "Value": [
             np.mean(inference_times_ms),
             np.std(inference_times_ms),
             np.max(inference_times_ms),
@@ -239,7 +240,7 @@ def main():
     train_image_paths = get_image_paths(DATASET_DIR, "train")
     test_image_paths = get_image_paths(DATASET_DIR, "test")
     val_image_paths = get_image_paths(DATASET_DIR, "valid")
-    image_paths = test_image_paths  + train_image_paths + val_image_paths
+    image_paths = test_image_paths + train_image_paths + val_image_paths
 
     # Predictor selection
     predictor_class, url = select_predictor()
