@@ -1,15 +1,13 @@
 # This CITATION.cff file was generated with https://bit.ly/cffinit.
 
 cff-version: 1.2.0
-title: Object Detection with Triton Inference Server
+title: "Signature Detect Server"
 message: >-
   If you use this software, please cite it using the
   metadata from this file.
 type: software
 authors:
   - name: Tech4Humans
-    address: 'Rua Sergipe, 475 Conj. 501 São Paulo'
-    city: São Paulo
     country: BR
     website: 'https://www.tech4.ai/'
     email: iag@tech4h.com.br
