@@ -1,0 +1,46 @@
+name: "[PROD] Deploy to Azure Container App"
+
+run-name: "[PROD] Deploy by ${{ github.actor }}"
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  environment:
+    name: "Load Environment Variables"
+    runs-on: ubuntu-latest
+    environment: Production
+    outputs:
+      app_name: ${{ vars.APP_NAME }}
+      group_name: ${{ vars.GROUP_NAME }}
+    steps:
+      - name: "Load Environment Variables"
+        id: vars
+        shell: bash
+        run: |
+          echo "Loading Environment Variables"
+    
+  call-deploy:
+    needs: environment 
+    uses: tech4ai/devops-reusable-workflows/.github/workflows/cd-docker-azure.yaml@v2.0.0
+    with:
+      container-app-name: ${{ needs.environment.outputs.app_name }}
+      resource-group: ${{ needs.environment.outputs.group_name }}
+      environment: Production
+      registry-url: ${{ vars.REGISTRY_USERNAME_PRODUCTION }}.azurecr.io
+    secrets:
+      REGISTRY_USERNAME: ${{ vars.REGISTRY_USERNAME_PRODUCTION }}
+      REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD_PRODUCTION }}
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID_PRODUCTION }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID_PRODUCTION }}
