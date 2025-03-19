@@ -15,6 +15,7 @@ on:
     branches:
       - release/v*
       - hotfix/v*
+  workflow_dispatch:
 
 jobs:
   environment:
@@ -30,9 +31,23 @@ jobs:
         shell: bash
         run: |
           echo "Loading Environment Variables"
-    
+
+  copy-data:
+    needs: environment
+    uses: tech4humans-devops/CI-CD/.github/workflows/azure-storage-copy.yml@feature/storage-copy
+    with:
+      environment: Staging
+    secrets:
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID_STAGING }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID_STAGING }}
+      ORIGIN_STORAGE_ACCOUNT: ${{ vars.STORAGE_ACCOUNT_DEVELOP }}
+      TARGET_STORAGE_ACCOUNT: ${{ vars.STORAGE_ACCOUNT_STAGING }}
+      ORIGIN_CONTAINER_NAME: ${{ vars.BLOB_CONTAINER_NAME_DEVELOP }}
+      TARGET_CONTAINER_NAME: ${{ vars.BLOB_CONTAINER_NAME_STAGING }}
+
   call-deploy:
-    needs: environment 
+    needs: copy-data 
     uses: tech4ai/devops-reusable-workflows/.github/workflows/cd-docker-azure.yaml@v2.0.0
     with:
       container-app-name: ${{ needs.environment.outputs.app_name }}
