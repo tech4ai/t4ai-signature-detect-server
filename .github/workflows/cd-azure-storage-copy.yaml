@@ -62,7 +62,7 @@ jobs:
             --permissions rl \
             --expiry $(date -u -d '1 hour' '+%Y-%m-%dT%H:%M:%SZ') \
             --auth-mode login \
-            --as user \
+            --as-user \
             --output tsv)
 
           DESTINATION_SAS=$(az storage container generate-sas \
@@ -71,7 +71,7 @@ jobs:
             --permissions rlw \
             --expiry $(date -u -d '1 hour' '+%Y-%m-%dT%H:%M:%SZ') \
             --auth-mode login \
-            --as user \
+            --as-user \
             --output tsv)
 
           echo "ORIGIN_SAS=$ORIGIN_SAS" >> $GITHUB_ENV
