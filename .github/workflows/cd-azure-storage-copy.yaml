@@ -32,7 +32,16 @@ on:
 jobs:
   copy-storage:
     runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
     environment: ${{ inputs.environment }}
+
+    env:
+      ORIGIN_SAS: ""
+      DESTINATION_SAS: ""
 
     steps:
       - name: Checkout repo
@@ -45,16 +54,35 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Generate SAS Token for Origin and Destination
+        run: |
+          ORIGIN_SAS=$(az storage container generate-sas \
+            --name ${{ secrets.ORIGIN_CONTAINER_NAME }} \
+            --account-name ${{ secrets.ORIGIN_STORAGE_ACCOUNT }} \
+            --permissions rl \
+            --expiry $(date -u -d '1 hour' '+%Y-%m-%dT%H:%M:%SZ') \
+            --auth-mode login \
+            --output tsv)
+
+          DESTINATION_SAS=$(az storage container generate-sas \
+            --name ${{ secrets.TARGET_CONTAINER_NAME }} \
+            --account-name ${{ secrets.TARGET_STORAGE_ACCOUNT }} \
+            --permissions rlw \
+            --expiry $(date -u -d '1 hour' '+%Y-%m-%dT%H:%M:%SZ') \
+            --auth-mode login \
+            --output tsv)
+
+          echo "ORIGIN_SAS=$ORIGIN_SAS" >> $GITHUB_ENV
+          echo "DESTINATION_SAS=$DESTINATION_SAS" >> $GITHUB_ENV
+
       - name: Install AzCopy
         run: |
           wget -O azcopy.tar.gz https://aka.ms/downloadazcopy-v10-linux
           tar -xvf azcopy.tar.gz
           sudo mv azcopy_linux_amd64_*/azcopy /usr/local/bin/
-
-      - name: Authenticate AzCopy
-        run: azcopy login --identity
-
-      - name: Copy Storage Data
+  
+      - name: Copy Storage Data using SAS Tokens
         run: |
-          azcopy copy "https://${{ secrets.ORIGIN_STORAGE_ACCOUNT }}.blob.core.windows.net/${{ secrets.ORIGIN_CONTAINER_NAME }}" \
-                      "https://${{ secrets.TARGET_STORAGE_ACCOUNT }}.blob.core.windows.net/${{ secrets.TARGET_CONTAINER_NAME }}" --recursive
+          azcopy copy "https://${{ secrets.ORIGIN_STORAGE_ACCOUNT }}.blob.core.windows.net/${{ secrets.ORIGIN_CONTAINER_NAME }}?${{ env.ORIGIN_SAS }}" \
+                      "https://${{ secrets.TARGET_STORAGE_ACCOUNT }}.blob.core.windows.net/${{ secrets.TARGET_CONTAINER_NAME }}?${{ env.DESTINATION_SAS }}" \
+                      --recursive
