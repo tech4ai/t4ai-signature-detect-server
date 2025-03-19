@@ -32,7 +32,7 @@ jobs:
     
   call-deploy:
     needs: environment 
-    uses: tech4ai/devops-reusable-workflows/.github/workflows/cd-docker-azure.yaml@v2.0.0
+    uses: tech4ai/t4ai-signature-detect-server/.github/workflows/reusable/cd-docker-azure.yaml@develop
     with:
       container-app-name: ${{ needs.environment.outputs.app_name }}
       resource-group: ${{ needs.environment.outputs.group_name }}
