@@ -1,0 +1,73 @@
+# .github/workflows/deploy.yml
+name: "Deploy Application"
+
+on:
+  workflow_call:
+    inputs:
+      container-app-name:
+        description: 'Azure Container App Name'
+        required: true
+        type: string
+      resource-group:
+        description: 'Azure Resource Group'
+        required: true
+        type: string
+      registry-url:
+        description: 'ACR Registry URL'
+        required: true
+        type: string
+      environment:
+        description: 'Environment'
+        required: true
+        type: string
+      dockerFilePath:
+        description: 'Dockerfile Path'
+        required: false
+        type: string
+        default: './Dockerfile'
+    secrets:
+      REGISTRY_USERNAME:
+        description: 'ACR Registry Username'
+        required: true
+      REGISTRY_PASSWORD:
+        description: 'ACR Registry Password'
+        required: true
+      AZURE_CLIENT_ID:
+        description: 'Azure Client ID'
+        required: true
+      AZURE_TENANT_ID:
+        description: 'Azure Tenant ID'
+        required: true
+      AZURE_SUBSCRIPTION_ID:
+        description: 'Azure Subscription ID'
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push container image to registry
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          appSourcePath: ${{ github.workspace }}
+          dockerfilePath: ${{ inputs.dockerFilePath }}
+          registryUrl: ${{ inputs.registry-url }}
+          registryUsername: ${{ secrets.REGISTRY_USERNAME }}
+          registryPassword: ${{ secrets.REGISTRY_PASSWORD }}
+          containerAppName: ${{ inputs.container-app-name }}
+          resourceGroup: ${{ inputs.resource-group }}
+          imageToBuild: ${{ inputs.registry-url }}/${{ inputs.container-app-name }}:${{ github.sha }}

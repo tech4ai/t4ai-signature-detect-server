@@ -34,7 +34,7 @@ jobs:
 
   copy-data:
     needs: environment
-    uses: tech4humans-devops/CI-CD/.github/workflows/azure-storage-copy.yml@feature/storage-copy
+    uses: tech4ai/t4ai-signature-detect-server/.github/workflows/reusable/cd-azure-storage-copy.yaml@stg-prod-pipelines
     with:
       environment: Staging
     secrets:
@@ -48,7 +48,7 @@ jobs:
 
   call-deploy:
     needs: copy-data 
-    uses: tech4ai/devops-reusable-workflows/.github/workflows/cd-docker-azure.yaml@v2.0.0
+    uses: tech4ai/t4ai-signature-detect-server/.github/workflows/reusable/cd-docker-azure.yaml@stg-prod-pipelines
     with:
       container-app-name: ${{ needs.environment.outputs.app_name }}
       resource-group: ${{ needs.environment.outputs.group_name }}

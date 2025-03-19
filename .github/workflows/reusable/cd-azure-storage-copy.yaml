@@ -1,0 +1,60 @@
+name: "Copy Storage Contents"
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: "Ambiente"
+        required: true
+        type: string
+    secrets:
+      AZURE_CLIENT_ID:
+        description: "ID do client da Azure"
+        required: true
+      AZURE_TENANT_ID:
+        description: "ID do tenant da Azure"
+        required: true
+      AZURE_SUBSCRIPTION_ID:
+        description: "ID da subscription da Azure"
+        required: true
+      ORIGIN_STORAGE_ACCOUNT:
+        description: "Conta de armazenamento de origem"
+        required: true
+      TARGET_STORAGE_ACCOUNT:
+        description: "Conta de armazenamento de destino"
+        required: true
+      ORIGIN_CONTAINER_NAME:
+        description: "Nome do container de origem"
+        required: true
+      TARGET_CONTAINER_NAME:
+        description: "Nome do container de destino"
+        required: true
+
+jobs:
+  copy-storage:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Install AzCopy
+        run: |
+          wget -O azcopy.tar.gz https://aka.ms/downloadazcopy-v10-linux
+          tar -xvf azcopy.tar.gz
+          sudo mv azcopy_linux_amd64_*/azcopy /usr/local/bin/
+
+      - name: Authenticate AzCopy
+        run: azcopy login --identity
+
+      - name: Copy Storage Data
+        run: |
+          azcopy copy "https://${{ secrets.ORIGIN_STORAGE_ACCOUNT }}.blob.core.windows.net/${{ secrets.ORIGIN_CONTAINER_NAME }}" \
+                      "https://${{ secrets.TARGET_STORAGE_ACCOUNT }}.blob.core.windows.net/${{ secrets.TARGET_CONTAINER_NAME }}" --recursive
