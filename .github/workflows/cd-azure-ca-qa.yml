@@ -47,7 +47,7 @@ jobs:
       TARGET_CONTAINER_NAME: ${{ vars.BLOB_CONTAINER_NAME_STAGING }}
 
   call-deploy:
-    needs: copy-data 
+    needs: [environment, copy-data]
     uses: tech4ai/t4ai-signature-detect-server/.github/workflows/reusable/cd-docker-azure.yaml@develop
     with:
       container-app-name: ${{ needs.environment.outputs.app_name }}
