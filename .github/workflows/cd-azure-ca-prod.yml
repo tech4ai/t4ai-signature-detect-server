@@ -14,6 +14,7 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 jobs:
   environment:
@@ -29,9 +30,23 @@ jobs:
         shell: bash
         run: |
           echo "Loading Environment Variables"
+  
+  copy-data:
+    needs: environment
+    uses: tech4ai/t4ai-signature-detect-server/.github/workflows/cd-azure-storage-copy.yaml@develop
+    with:
+      environment: Production
+    secrets:
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID_PRODUCTION }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID_PRODUCTION }}
+      ORIGIN_STORAGE_ACCOUNT: ${{ vars.STORAGE_ACCOUNT_STAGING }}
+      TARGET_STORAGE_ACCOUNT: ${{ vars.STORAGE_ACCOUNT_PRODUCTION }}
+      ORIGIN_CONTAINER_NAME: ${{ vars.BLOB_CONTAINER_NAME_STAGING }}
+      TARGET_CONTAINER_NAME: ${{ vars.BLOB_CONTAINER_NAME_PRODUCTION }}
     
   call-deploy:
-    needs: environment 
+    needs: [environment, copy-data]
     uses: tech4ai/t4ai-signature-detect-server/.github/workflows/cd-docker-azure.yaml@develop
     with:
       container-app-name: ${{ needs.environment.outputs.app_name }}
